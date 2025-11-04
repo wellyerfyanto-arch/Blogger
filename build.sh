@@ -3,6 +3,9 @@ set -e  # Exit on error
 
 echo "🚀 Starting build process on Render..."
 
+# Upgrade pip first
+python -m pip install --upgrade pip
+
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
@@ -14,12 +17,16 @@ mkdir -p data uploads static/images templates
 # Create initial data files if they don't exist
 echo "📊 Initializing data files..."
 
-if [ ! -f data/scheduled_posts.json ]; then
-    echo '[]' > data/scheduled_posts.json
-    echo "✅ Created scheduled_posts.json"
-fi
+# Create empty JSON files if they don't exist
+for file in scheduled_posts posting_config bulk_titles advanced_config api_keys; do
+    if [ ! -f "data/${file}.json" ]; then
+        echo '{}' > "data/${file}.json"
+        echo "✅ Created ${file}.json"
+    fi
+done
 
-if [ ! -f data/posting_config.json ]; then
+# Initialize specific config files with proper content
+if [ ! -s "data/posting_config.json" ]; then
     echo '{
         "posting_schedule": {
             "frequency": "daily",
@@ -43,51 +50,9 @@ if [ ! -f data/posting_config.json ]; then
             "meta_description_auto": true
         }
     }' > data/posting_config.json
-    echo "✅ Created posting_config.json"
 fi
 
-if [ ! -f data/bulk_titles.json ]; then
-    echo '[]' > data/bulk_titles.json
-    echo "✅ Created bulk_titles.json"
-fi
-
-if [ ! -f data/advanced_config.json ]; then
-    echo '{
-        "posting_strategies": {
-            "peak_hours": ["09:00", "14:00", "19:00"],
-            "best_days": ["monday", "wednesday", "friday"],
-            "seasonal_topics": {
-                "q1": ["investasi awal tahun", "prediksi crypto tahun ini"],
-                "q2": ["tax crypto", "mid-year review"],
-                "q3": ["persiapan akhir tahun", "market analysis"],
-                "q4": ["wrap-up tahun", "prediksi tahun depan"]
-            }
-        },
-        "content_templates": {
-            "how_to": {
-                "structure": ["intro", "langkah_demi_langkah", "tips", "kesimpulan"],
-                "keywords": ["cara", "panduan", "tutorial", "langkah"]
-            },
-            "review": {
-                "structure": ["overview", "kelebihan", "kekurangan", "verdict"],
-                "keywords": ["review", "ulasan", "test", "analisis"]
-            },
-            "news": {
-                "structure": ["berita_terkini", "dampak", "analisis", "prediksi"],
-                "keywords": ["berita", "update", "terbaru", "trending"]
-            }
-        },
-        "auto_posting_rules": {
-            "min_interval_between_posts": 4,
-            "max_posts_per_day": 3,
-            "avoid_duplicate_topics": true,
-            "auto_diversify_content_types": true
-        }
-    }' > data/advanced_config.json
-    echo "✅ Created advanced_config.json"
-fi
-
-if [ ! -f data/api_keys.json ]; then
+if [ ! -s "data/api_keys.json" ]; then
     echo '{
         "openai_api_key": "",
         "hf_api_key": "",
@@ -96,15 +61,16 @@ if [ ! -f data/api_keys.json ]; then
         "google_client_secret": "",
         "is_configured": false
     }' > data/api_keys.json
-    echo "✅ Created api_keys.json"
 fi
 
-# Set proper permissions
-chmod -R 755 data uploads static
+# Initialize empty arrays for posts and titles
+if [ ! -s "data/scheduled_posts.json" ]; then
+    echo '[]' > data/scheduled_posts.json
+fi
+
+if [ ! -s "data/bulk_titles.json" ]; then
+    echo '[]' > data/bulk_titles.json
+fi
 
 echo "🎉 Build completed successfully!"
-echo "🔐 Next steps:"
-echo "   1. Access your app at the provided URL"
-echo "   2. Set a master key on first login"
-echo "   3. Configure API keys in the Settings page"
-echo "   4. Start uploading titles and scheduling posts!"
+echo "🔐 Application ready for deployment!"
