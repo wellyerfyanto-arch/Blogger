@@ -32,3 +32,61 @@ cd crypto-auto-poster
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env dengan API keys Anda
+
+🛠️ Development
+bash
+python app.py
+Buka http://localhost:5000
+
+📝 License
+MIT License
+
+🤝 Contributing
+Pull requests are welcome!
+
+### **2. .gitignore**
+```gitignore
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Data files
+data/
+uploads/
+*.json
+!samples/*.json
+
+# API credentials
+credentials.json
+token.pickle
+client_secrets.json
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Render
+.render.yaml
