@@ -87,16 +87,24 @@ if [ ! -f data/advanced_config.json ]; then
     echo "✅ Created advanced_config.json"
 fi
 
-# Create Google credentials from environment variable if provided
-if [ -n "$GOOGLE_CREDENTIALS_JSON" ]; then
-    echo "$GOOGLE_CREDENTIALS_JSON" > credentials.json
-    echo "✅ Created credentials.json from environment variable"
-else
-    echo "⚠️  GOOGLE_CREDENTIALS_JSON not set - Blogger integration may not work"
+if [ ! -f data/api_keys.json ]; then
+    echo '{
+        "openai_api_key": "",
+        "hf_api_key": "",
+        "blogger_blog_id": "",
+        "google_client_id": "",
+        "google_client_secret": "",
+        "is_configured": false
+    }' > data/api_keys.json
+    echo "✅ Created api_keys.json"
 fi
 
 # Set proper permissions
 chmod -R 755 data uploads static
 
 echo "🎉 Build completed successfully!"
-echo "📝 Application will be available at: https://crypto-auto-poster.onrender.com"
+echo "🔐 Next steps:"
+echo "   1. Access your app at the provided URL"
+echo "   2. Set a master key on first login"
+echo "   3. Configure API keys in the Settings page"
+echo "   4. Start uploading titles and scheduling posts!"
