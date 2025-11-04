@@ -18,6 +18,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
         
         .login-container {
@@ -25,7 +26,7 @@
             padding: 3rem;
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            width: 90%;
+            width: 100%;
             max-width: 400px;
         }
         
@@ -37,6 +38,12 @@
         .logo h1 {
             color: #333;
             font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 1rem;
         }
         
         .form-group {
@@ -75,6 +82,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s;
+            margin-bottom: 1rem;
         }
         
         .btn:hover {
@@ -90,6 +98,15 @@
             border-left: 4px solid #dc2626;
         }
         
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #065f46;
+        }
+        
         .info-box {
             background: #dbeafe;
             color: #1e40af;
@@ -97,6 +114,21 @@
             border-radius: 8px;
             margin-top: 1.5rem;
             font-size: 0.875rem;
+        }
+        
+        .debug-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .debug-link a {
+            color: #666;
+            font-size: 0.8rem;
+            text-decoration: none;
+        }
+        
+        .debug-link a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -113,20 +145,31 @@
         </div>
         {% endif %}
         
+        {% if request.args.get('success') %}
+        <div class="success">
+            ✅ Master key set successfully! You can now login.
+        </div>
+        {% endif %}
+        
         <form method="POST">
             <div class="form-group">
                 <label for="master_key">Master Key</label>
                 <input type="password" id="master_key" name="master_key" 
-                       placeholder="Enter your master key" required>
+                       placeholder="Enter your master key" required autofocus>
             </div>
             
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">Login to Dashboard</button>
         </form>
         
         <div class="info-box">
-            <strong>First time?</strong><br>
+            <strong>First time setup?</strong><br>
             Enter any master key to set it for the first time. 
-            Remember this key as it will be required for future access.
+            <strong>Remember this key</strong> as it will be required for future access.
+            After login, configure your API keys in the Settings page.
+        </div>
+        
+        <div class="debug-link">
+            <a href="/debug" target="_blank">System Debug Info</a>
         </div>
     </div>
 </body>
