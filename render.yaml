@@ -2,23 +2,25 @@ services:
   - type: web
     name: crypto-auto-poster
     env: python
+    plan: free
+    region: singapore
     buildCommand: ./build.sh
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
-        value: your_openai_api_key_here
+        sync: false
       - key: HF_API_KEY
-        value: your_huggingface_api_key_here
+        sync: false
       - key: BLOGGER_BLOG_ID
-        value: your_blogger_blog_id
+        sync: false
       - key: GOOGLE_CLIENT_ID
-        value: your_google_client_id
+        sync: false
       - key: GOOGLE_CLIENT_SECRET
-        value: your_google_client_secret
+        sync: false
     disk:
       name: data
       mountPath: /opt/render/project/src/data
