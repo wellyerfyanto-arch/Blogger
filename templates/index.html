@@ -3,317 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Auto Posting - Crypto Ajah</title>
+    <title>Crypto Auto Poster - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #667eea;
-            --secondary: #764ba2;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1f2937;
-            --light: #f8fafc;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--dark);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .dashboard {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
-            min-height: 100vh;
-        }
-        
-        .sidebar {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        .main-content {
-            display: grid;
-            grid-template-rows: auto 1fr;
-            gap: 20px;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary);
-        }
-        
-        .content-tabs {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        .tab-headers {
-            display: flex;
-            background: var(--light);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .tab-header {
-            padding: 1rem 2rem;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        
-        .tab-header.active {
-            border-bottom-color: var(--primary);
-            color: var(--primary);
-            font-weight: 600;
-        }
-        
-        .tab-content {
-            padding: 2rem;
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--dark);
-        }
-        
-        input, select, textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-secondary {
-            background: var(--light);
-            color: var(--dark);
-        }
-        
-        .file-upload {
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.3s;
-        }
-        
-        .file-upload:hover {
-            border-color: var(--primary);
-        }
-        
-        .posts-list {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        
-        .post-item {
-            padding: 1rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: between;
-            align-items: center;
-        }
-        
-        .post-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-        
-        .status-scheduled { background: #fef3c7; color: #d97706; }
-        .status-published { background: #d1fae5; color: #065f46; }
-        .status-failed { background: #fee2e2; color: #dc2626; }
-        .status-pending { background: #e0e7ff; color: #3730a3; }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            transition: width 0.3s;
-        }
-        
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="dashboard">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <h1 style="margin-bottom: 2rem; color: var(--primary);">Auto Poster</h1>
-                
-                <div class="form-group">
-                    <label>Posting Frequency</label>
-                    <select id="postingFrequency">
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                    </select>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>🤖 Crypto Poster</h1>
+            </div>
+            <nav class="nav">
+                <a href="#dashboard" class="nav-item active">📊 Dashboard</a>
+                <a href="#bulk-upload" class="nav-item">📤 Bulk Upload</a>
+                <a href="#scheduling" class="nav-item">⏰ Scheduling</a>
+                <a href="#performance" class="nav-item">📈 Performance</a>
+                <a href="#configuration" class="nav-item">⚙️ Configuration</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h2>Auto Posting Dashboard</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="showUploadModal()">
+                        📤 Upload Titles
+                    </button>
+                    <button class="btn btn-secondary" onclick="showScheduleModal()">
+                        ⏰ Schedule Post
+                    </button>
                 </div>
-                
-                <div class="form-group">
-                    <label>Posting Time</label>
-                    <input type="time" id="postingTime" value="10:00">
-                </div>
-                
-                <div class="form-group" id="weeklyDays" style="display: none;">
-                    <label>Posting Days</label>
-                    <div>
-                        <label><input type="checkbox" name="days" value="monday" checked> Mon</label>
-                        <label><input type="checkbox" name="days" value="wednesday" checked> Wed</label>
-                        <label><input type="checkbox" name="days" value="friday" checked> Fri</label>
+            </header>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <h3 id="totalPosts">0</h3>
+                        <p>Total Posts</p>
                     </div>
                 </div>
-                
-                <button class="btn" onclick="updateConfig()">Update Settings</button>
-                
-                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
-                    <h3>Quick Actions</h3>
-                    <button class="btn btn-secondary" style="width: 100%; margin: 0.5rem 0;" onclick="scheduleBulk()">
-                        Schedule All Pending
-                    </button>
-                    <button class="btn btn-secondary" style="width: 100%; margin: 0.5rem 0;" onclick="generateTitles()">
-                        Generate Title Ideas
-                    </button>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <h3 id="publishedPosts">0</h3>
+                        <p>Published</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <h3 id="scheduledPosts">0</h3>
+                        <p>Scheduled</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <h3 id="pendingTitles">0</h3>
+                        <p>Pending Titles</p>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Main Content -->
-            <div class="main-content">
-                <!-- Statistics -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalPosts">0</div>
-                        <div>Total Posts</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="publishedPosts">0</div>
-                        <div>Published</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="scheduledPosts">0</div>
-                        <div>Scheduled</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="pendingTitles">0</div>
-                        <div>Pending Titles</div>
-                    </div>
+
+            <!-- Recent Activity -->
+            <div class="activity-section">
+                <h3>Recent Activity</h3>
+                <div class="activity-list" id="activityList">
+                    <!-- Activity items will be loaded here -->
                 </div>
-                
-                <!-- Content Tabs -->
-                <div class="content-tabs">
-                    <div class="tab-headers">
-                        <div class="tab-header active" onclick="switchTab('bulk-upload')">Bulk Upload</div>
-                        <div class="tab-header" onclick="switchTab('single-post')">Single Post</div>
-                        <div class="tab-header" onclick="switchTab('scheduled')">Scheduled Posts</div>
-                        <div class="tab-header" onclick="switchTab('bulk-titles')">Bulk Titles</div>
-                    </div>
-                    
-                    <!-- Bulk Upload Tab -->
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="chart-section">
+                <h3>Performance Overview</h3>
+                <canvas id="performanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUploadModal()">&times;</span>
+            <h3>Upload Multiple Titles</h3>
+            <div class="upload-options">
+                <div class="upload-option" onclick="showFileUpload()">
+                    <div class="upload-icon">📁</div>
+                    <h4>Upload File</h4>
+                    <p>CSV, Excel, or TXT</p>
+                </div>
+                <div class="upload-option" onclick="showManualInput()">
+                    <div class="upload-icon">✍️</div>
+                    <h4>Manual Input</h4>
+                    <p>Type titles manually</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+    </html>            <!-- Bulk Upload Tab -->
                     <div class="tab-content active" id="bulk-upload-tab">
                         <div class="card">
                             <h2>Upload Multiple Titles</h2>
