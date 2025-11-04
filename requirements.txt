@@ -9,19 +9,20 @@ google-api-python-client==2.95.0
 google-auth-httplib2==0.1.1
 google-auth-oauthlib==1.0.0
 
-# Data Processing
-pandas==2.0.3
+# Data Processing - Use lighter alternatives
 beautifulsoup4==4.12.2
-lxml==4.9.3
+html2text==2020.1.16
+markdown==3.4.4
 
 # Content Generation
 openai==0.28.0
-markdown==3.4.4
-html2text==2020.1.16
 
 # Scheduling & Utilities
 schedule==1.2.0
 flask-session==0.4.0
 python-dotenv==1.0.0
 
-# Database (SQLite included in Python)
+# Replace pandas with lighter CSV processing
+csv23==0.3.2
+
+# Replace lxml with built-in alternatives
