@@ -1,0 +1,77 @@
+{
+  "categories": {
+    "bitcoin": [
+      "bitcoin",
+      "btc",
+      "satoshi nakamoto",
+      "cryptocurrency",
+      "digital gold",
+      "blockchain bitcoin",
+      "investasi bitcoin",
+      "harga bitcoin"
+    ],
+    "ethereum": [
+      "ethereum",
+      "eth",
+      "vitalik buterin",
+      "smart contract",
+      "dapp",
+      "defi",
+      "web3",
+      "gas fee"
+    ],
+    "trading": [
+      "trading crypto",
+      "technical analysis",
+      "market analysis",
+      "trading strategy",
+      "bull market",
+      "bear market",
+      "volatility",
+      "liquidity"
+    ],
+    "investment": [
+      "investasi crypto",
+      "portfolio",
+      "diversifikasi",
+      "risk management",
+      "long term",
+      "short term",
+      "roi",
+      "profit"
+    ],
+    "technology": [
+      "blockchain",
+      "distributed ledger",
+      "consensus mechanism",
+      "proof of work",
+      "proof of stake",
+      "smart contract",
+      "tokenization",
+      "web3"
+    ]
+  },
+  "long_tail_keywords": {
+    "beginner": [
+      "cara mulai investasi crypto untuk pemula",
+      "panduan trading crypto step by step",
+      "belajar blockchain dari nol",
+      "crypto untuk orang awam",
+      "investasi crypto modal kecil"
+    ],
+    "advanced": [
+      "strategi trading crypto advanced",
+      "technical analysis masterclass",
+      "risk management profesional",
+      "portfolio optimization crypto",
+      "market prediction techniques"
+    ],
+    "reviews": [
+      "review exchange binance terbaru",
+      "perbandingan wallet crypto terbaik",
+      "analisis platform trading terpercaya",
+      "review hardware wallet ledger vs trezor",
+      "platform mining cloud terbaik 2024"
+    ]
+  }
+}
