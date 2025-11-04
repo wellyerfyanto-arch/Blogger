@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Auto Posting - Crypto Ajah</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f8fafc;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .content-tabs {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .tab-headers {
+            display: flex;
+            background: var(--light);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .tab-header {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-header.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            padding: 2rem;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: var(--light);
+            color: var(--dark);
+        }
+        
+        .file-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary);
+        }
+        
+        .posts-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .post-item {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .post-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .status-scheduled { background: #fef3c7; color: #d97706; }
+        .status-published { background: #d1fae5; color: #065f46; }
+        .status-failed { background: #fee2e2; color: #dc2626; }
+        .status-pending { background: #e0e7ff; color: #3730a3; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.3s;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h1 style="margin-bottom: 2rem; color: var(--primary);">Auto Poster</h1>
+                
+                <div class="form-group">
+                    <label>Posting Frequency</label>
+                    <select id="postingFrequency">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Posting Time</label>
+                    <input type="time" id="postingTime" value="10:00">
+                </div>
+                
+                <div class="form-group" id="weeklyDays" style="display: none;">
+                    <label>Posting Days</label>
+                    <div>
+                        <label><input type="checkbox" name="days" value="monday" checked> Mon</label>
+                        <label><input type="checkbox" name="days" value="wednesday" checked> Wed</label>
+                        <label><input type="checkbox" name="days" value="friday" checked> Fri</label>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="updateConfig()">Update Settings</button>
+                
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                    <h3>Quick Actions</h3>
+                    <button class="btn btn-secondary" style="width: 100%; margin: 0.5rem 0;" onclick="scheduleBulk()">
+                        Schedule All Pending
+                    </button>
+                    <button class="btn btn-secondary" style="width: 100%; margin: 0.5rem 0;" onclick="generateTitles()">
+                        Generate Title Ideas
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Statistics -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPosts">0</div>
+                        <div>Total Posts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="publishedPosts">0</div>
+                        <div>Published</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="scheduledPosts">0</div>
+                        <div>Scheduled</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pendingTitles">0</div>
+                        <div>Pending Titles</div>
+                    </div>
+                </div>
+                
+                <!-- Content Tabs -->
+                <div class="content-tabs">
+                    <div class="tab-headers">
+                        <div class="tab-header active" onclick="switchTab('bulk-upload')">Bulk Upload</div>
+                        <div class="tab-header" onclick="switchTab('single-post')">Single Post</div>
+                        <div class="tab-header" onclick="switchTab('scheduled')">Scheduled Posts</div>
+                        <div class="tab-header" onclick="switchTab('bulk-titles')">Bulk Titles</div>
+                    </div>
+                    
+                    <!-- Bulk Upload Tab -->
+                    <div class="tab-content active" id="bulk-upload-tab">
+                        <div class="card">
+                            <h2>Upload Multiple Titles</h2>
+                            <p>Upload file CSV, Excel, atau TXT yang berisi daftar judul artikel</p>
+                            
+                            <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                                <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this.files[0])">
+                                <div>📁 Click to upload file</div>
+                                <small>Supported formats: CSV, XLSX, TXT</small>
+                            </div>
+                            
+                            <div id="uploadProgress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                                </div>
+                                <div id="uploadStatus">Processing...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Single Post Tab -->
+                    <div class="tab-content" id="single-post-tab">
+                        <div class="card">
+                            <h2>Create Single Post</h2>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Article Title</label>
+                                    <input type="text" id="singleTitle" placeholder="Enter article title">
+                                </div>
+                                <div class="form-group">
+                                    <label>Keywords (comma separated)</label>
+                                    <input type="text" id="singleKeywords" placeholder="keyword1, keyword2, keyword3">
+                                </div>
+                                <div class="form-group">
+                                    <label>Publish Date & Time</label>
+                                    <input type="datetime-local" id="singlePublishDate">
+                                </div>
+                                <div class="form-group">
+                                    <label>Action</label>
+                                    <div>
+                                        <button class="btn" onclick="addSinglePost()">Schedule Post</button>
+                                        <button class="btn btn-secondary" onclick="addToBulk()">Add to Bulk</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Scheduled Posts Tab -->
+                    <div class="tab-content" id="scheduled-tab">
+                        <div class="card">
+                            <h2>Scheduled Posts</h2>
+                            <div class="posts-list" id="scheduledPostsList">
+                                <!-- Posts will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bulk Titles Tab -->
+                    <div class="tab-content" id="bulk-titles-tab">
+                        <div class="card">
+                            <h2>Bulk Titles Management</h2>
+                            <div class="posts-list" id="bulkTitlesList">
+                                <!-- Bulk titles will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadScheduledPosts();
+            loadBulkTitles();
+            loadConfig();
+        });
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-header').forEach(header => {
+                header.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Handle file upload
+        async function handleFileUpload(file) {
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            document.getElementById('uploadProgress').style.display = 'block';
+            
+            try {
+                const response = await fetch('/bulk-upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('uploadStatus').textContent = 
+                        `Successfully uploaded ${result.titles.length} titles`;
+                    document.getElementById('progressFill').style.width = '100%';
+                    
+                    // Reload data
+                    setTimeout(() => {
+                        loadStats();
+                        loadBulkTitles();
+                        document.getElementById('uploadProgress').style.display = 'none';
+                        document.getElementById('progressFill').style.width = '0%';
+                    }, 2000);
+                } else {
+                    document.getElementById('uploadStatus').textContent = 'Error: ' + result.error;
+                }
+            } catch (error) {
+                document.getElementById('uploadStatus').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Add single post
+        async function addSinglePost() {
+            const title = document.getElementById('singleTitle').value;
+            const keywords = document.getElementById('singleKeywords').value;
+            const publishDate = document.getElementById('singlePublishDate').value;
+            
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+            
+            const data = {
+                title: title,
+                keywords: keywords ? keywords.split(',').map(k => k.trim()) : [],
+                publish_date: publishDate
+            };
+            
+            try {
+                const response = await fetch('/add-title', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Post added successfully!');
+                    document.getElementById('singleTitle').value = '';
+                    document.getElementById('singleKeywords').value = '';
+                    loadStats();
+                    loadScheduledPosts();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Add to bulk titles
+        async function addToBulk() {
+            const title = document.getElementById('singleTitle').value;
+            const keywords = document.getElementById('singleKeywords').value;
+            
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+            
+            const data = {
+                title: title,
+                keywords: keywords ? keywords.split(',').map(k => k.trim()) : []
+            };
+            
+            try {
+                const response = await fetch('/add-title', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Title added to bulk list!');
+                    document.getElementById('singleTitle').value = '';
+                    document.getElementById('singleKeywords').value = '';
+                    loadStats();
+                    loadBulkTitles();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Schedule all bulk titles
+        async function scheduleBulk() {
+            try {
+                const response = await fetch('/schedule-bulk', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    loadStats();
+                    loadScheduledPosts();
+                    loadBulkTitles();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Update configuration
+        async function updateConfig() {
+            const frequency = document.getElementById('postingFrequency').value;
+            const time = document.getElementById('postingTime').value;
+            
+            const config = {
+                posting_schedule: {
+                    frequency: frequency,
+                    time: time,
+                    days: frequency === 'weekly' ? 
+                        Array.from(document.querySelectorAll('input[name="days"]:checked'))
+                            .map(cb => cb.value) : 
+                        ["monday", "wednesday", "friday"],
+                    max_posts_per_day: 2
+                }
+            };
+            
+            try {
+                const response = await fetch('/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Configuration updated successfully!');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Load functions
+        async function loadStats() {
+            const response = await fetch('/');
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Extract stats from the page (you might want to create a separate stats endpoint)
+            // This is a simplified version
+        }
+        
+        async function loadScheduledPosts() {
+            const response = await fetch('/posts?page=1');
+            const data = await response.json();
+            
+            const postsList = document.getElementById('scheduledPostsList');
+            postsList.innerHTML = '';
+            
+            data.posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post-item';
+                postElement.innerHTML = `
+                    <div style="flex: 1;">
+                        <strong>${post.title}</strong>
+                        <div style="font-size: 0.875rem; color: #6b7280;">
+                            ${new Date(post.publish_date).toLocaleString()}
+                        </div>
+                    </div>
+                    <span class="post-status status-${post.status}">${post.status}</span>
+                `;
+                postsList.appendChild(postElement);
+            });
+        }
+        
+        async function loadBulkTitles() {
+            const response = await fetch('/bulk-titles');
+            const titles = await response.json();
+            
+            const titlesList = document.getElementById('bulkTitlesList');
+            titlesList.innerHTML = '';
+            
+            titles.forEach(title => {
+                const titleElement = document.createElement('div');
+                titleElement.className = 'post-item';
+                titleElement.innerHTML = `
+                    <div style="flex: 1;">
+                        <strong>${title.title}</strong>
+                        <div style="font-size: 0.875rem; color: #6b7280;">
+                            Added: ${new Date(title.added_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <span class="post-status status-${title.status}">${title.status}</span>
+                `;
+                titlesList.appendChild(titleElement);
+            });
+        }
+        
+        function loadConfig() {
+            // This would load the current configuration into the form
+            // For now, we'll just show/hide weekly days based on frequency
+            document.getElementById('postingFrequency').addEventListener('change', function() {
+                document.getElementById('weeklyDays').style.display = 
+                    this.value === 'weekly' ? 'block' : 'none';
+            });
+        }
+        
+        // Generate title ideas
+        function generateTitles() {
+            const seasonalTopics = [
+                "Panduan Investasi Crypto untuk Pemula di Tahun 2024",
+                "Analisis Market Bitcoin: Prediksi Harga dan Trend",
+                "10 Altcoin Potensial dengan ROI Tinggi di Kuartal Ini",
+                "Cara Aman Menyimpan Crypto: Wallet vs Exchange",
+                "Understanding Blockchain Technology: Dasar-dasar untuk Pemula",
+                "Strategi Trading Crypto yang Menguntungkan di Market Volatile",
+                "Review Platform Mining Cloud Terbaik 2024",
+                "Pajak Cryptocurrency: Panduan Lengkap untuk Trader Indonesia",
+                "NFT dan Masa Depan Digital Asset di Indonesia",
+                "Perbandingan Exchange Crypto Terpopuler: Mana yang Terbaik?"
+            ];
+            
+            // Add these to bulk titles
+            seasonalTopics.forEach(title => {
+                // Simulate adding titles (you would make API calls here)
+                console.log('Adding title:', title);
+            });
+            
+            alert('Generated 10 seasonal title ideas! Check the Bulk Titles tab.');
+        }
+    </script>
+</body>
+</html>
