@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e  # Exit on error
 
-echo "🚀 Starting build process..."
+echo "🚀 Starting build process on Render..."
 
-# Install dependencies
+# Install Python dependencies
 echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
 
@@ -87,11 +87,16 @@ if [ ! -f data/advanced_config.json ]; then
     echo "✅ Created advanced_config.json"
 fi
 
-# Set permissions
-chmod +x app.py
+# Create Google credentials from environment variable if provided
+if [ -n "$GOOGLE_CREDENTIALS_JSON" ]; then
+    echo "$GOOGLE_CREDENTIALS_JSON" > credentials.json
+    echo "✅ Created credentials.json from environment variable"
+else
+    echo "⚠️  GOOGLE_CREDENTIALS_JSON not set - Blogger integration may not work"
+fi
+
+# Set proper permissions
+chmod -R 755 data uploads static
 
 echo "🎉 Build completed successfully!"
-echo "📝 Next steps:"
-echo "   1. Set environment variables in Render dashboard"
-echo "   2. Configure Blogger API credentials"
-echo "   3. Upload your titles and schedule posts!"
+echo "📝 Application will be available at: https://crypto-auto-poster.onrender.com"
