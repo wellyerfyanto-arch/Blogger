@@ -1,13 +1,25 @@
 services:
   - type: web
-    name: auto-posting-system
+    name: crypto-auto-poster
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    buildCommand: ./build.sh
+    startCommand: gunicorn app:app
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: SECRET_KEY
+        generateValue: true
       - key: OPENAI_API_KEY
-        value: your_openai_key
+        value: your_openai_api_key_here
       - key: HF_API_KEY
-        value: your_huggingface_key
+        value: your_huggingface_api_key_here
       - key: BLOGGER_BLOG_ID
-        value: your_blog_id
+        value: your_blogger_blog_id
+      - key: GOOGLE_CLIENT_ID
+        value: your_google_client_id
+      - key: GOOGLE_CLIENT_SECRET
+        value: your_google_client_secret
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
