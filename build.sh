@@ -1,14 +1,22 @@
 #!/bin/bash
+set -e  # Exit on error
 
-# Install Python dependencies
+echo "🚀 Starting build process..."
+
+# Install dependencies
+echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
 
 # Create necessary directories
-mkdir -p data uploads static/images
+echo "📁 Creating directories..."
+mkdir -p data uploads static/images templates
 
-# Create initial data files
+# Create initial data files if they don't exist
+echo "📊 Initializing data files..."
+
 if [ ! -f data/scheduled_posts.json ]; then
     echo '[]' > data/scheduled_posts.json
+    echo "✅ Created scheduled_posts.json"
 fi
 
 if [ ! -f data/posting_config.json ]; then
@@ -35,10 +43,12 @@ if [ ! -f data/posting_config.json ]; then
             "meta_description_auto": true
         }
     }' > data/posting_config.json
+    echo "✅ Created posting_config.json"
 fi
 
 if [ ! -f data/bulk_titles.json ]; then
     echo '[]' > data/bulk_titles.json
+    echo "✅ Created bulk_titles.json"
 fi
 
 if [ ! -f data/advanced_config.json ]; then
@@ -74,6 +84,14 @@ if [ ! -f data/advanced_config.json ]; then
             "auto_diversify_content_types": true
         }
     }' > data/advanced_config.json
+    echo "✅ Created advanced_config.json"
 fi
 
-echo "Build completed successfully!"
+# Set permissions
+chmod +x app.py
+
+echo "🎉 Build completed successfully!"
+echo "📝 Next steps:"
+echo "   1. Set environment variables in Render dashboard"
+echo "   2. Configure Blogger API credentials"
+echo "   3. Upload your titles and schedule posts!"
