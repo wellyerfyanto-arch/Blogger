@@ -1,36 +1,38 @@
 import requests
 import os
+import json
 import logging
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-def generate_image_prompt(title: str) -> str:
-    """
-    Generate AI image prompt berdasarkan judul artikel
-    """
-    prompt_template = f"""
-    Create a professional digital art illustration for a cryptocurrency blog article about: {title}
+def get_hf_key():
+    """Get Hugging Face API key from environment or API keys manager"""
+    # Try environment first (for Render env vars)
+    env_key = os.getenv('HF_API_KEY')
+    if env_key:
+        return env_key
     
-    Style: modern digital art, professional
-    Theme: cryptocurrency, blockchain, technology, finance
-    Mood: informative, futuristic, trustworthy
-    Colors: blue, orange, purple, gradient
-    Elements: crypto symbols, data visualization, digital elements
-    Composition: balanced, clean, professional
-    Aspect Ratio: 16:9 landscape
-    
-    Important: No text in the image, professional quality
-    """
-    
-    return prompt_template
+    # Try to load from API keys file
+    try:
+        with open('data/api_keys.json', 'r') as f:
+            api_keys = json.load(f)
+        return api_keys.get('hf_api_key', '')
+    except Exception as e:
+        logger.warning(f"Could not load HF key from file: {str(e)}")
+        return ''
 
 def create_image(prompt: str) -> Optional[str]:
     """
-    Generate gambar menggunakan Hugging Face API (gratis)
+    Generate gambar menggunakan Hugging Face API
     """
+    api_key = get_hf_key()
+    if not api_key:
+        logger.error("Hugging Face API key not configured")
+        return None
+    
     API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-    headers = {"Authorization": f"Bearer {os.getenv('HF_API_KEY')}"}
+    headers = {"Authorization": f"Bearer {api_key}"}
     
     try:
         response = requests.post(
@@ -59,8 +61,4 @@ def create_image(prompt: str) -> Optional[str]:
         logger.error(f"Image generation error: {str(e)}")
         return None
 
-def get_fallback_image() -> str:
-    """
-    Return fallback image URL
-    """
-    return "/static/images/placeholder.jpg"
+# ... (rest of the functions remain the same)
