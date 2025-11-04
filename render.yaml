@@ -4,8 +4,8 @@ services:
     env: python
     plan: free
     region: singapore
-    buildCommand: ./build.sh
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
@@ -21,7 +21,27 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true
     disk:
       name: data
       mountPath: /opt/render/project/src/data
       sizeGB: 1
+
+  # Optional: Background worker for scheduler (jika perlu dedicated worker)
+  # - type: worker
+  #   name: crypto-poster-scheduler
+  #   env: python
+  #   plan: free
+  #   region: singapore
+  #   buildCommand: chmod +x build.sh && ./build.sh
+  #   startCommand: python scheduler_worker.py
+  #   envVars:
+  #     - key: PYTHON_VERSION
+  #       value: 3.11.4
+  #     - fromService:
+  #         type: web
+  #         name: crypto-auto-poster
+  #         envVarKey: SECRET_KEY
