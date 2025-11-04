@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: auto-posting-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: OPENAI_API_KEY
+        value: your_openai_key
+      - key: HF_API_KEY
+        value: your_huggingface_key
+      - key: BLOGGER_BLOG_ID
+        value: your_blog_id
