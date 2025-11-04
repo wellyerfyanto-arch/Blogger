@@ -5,7 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Auto Poster - Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .api-alert {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+        }
+        
+        .api-alert a {
+            color: #d97706;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .api-alert a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard">
@@ -18,8 +36,8 @@
                 <a href="#dashboard" class="nav-item active">📊 Dashboard</a>
                 <a href="#bulk-upload" class="nav-item">📤 Bulk Upload</a>
                 <a href="#scheduling" class="nav-item">⏰ Scheduling</a>
-                <a href="#performance" class="nav-item">📈 Performance</a>
-                <a href="#configuration" class="nav-item">⚙️ Configuration</a>
+                <a href="{{ url_for('settings') }}" class="nav-item">🔧 API Settings</a>
+                <a href="{{ url_for('logout') }}" class="nav-item">🚪 Logout</a>
             </nav>
         </div>
 
@@ -38,34 +56,41 @@
                 </div>
             </header>
 
+            {% if not stats.api_configured %}
+            <div class="api-alert">
+                ⚠️ <strong>API Keys Not Configured</strong><br>
+                Please <a href="{{ url_for('settings') }}">configure your API keys</a> to enable auto posting functionality.
+            </div>
+            {% endif %}
+
             <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">📊</div>
                     <div class="stat-info">
-                        <h3 id="totalPosts">0</h3>
+                        <h3 id="totalPosts">{{ stats.total_posts }}</h3>
                         <p>Total Posts</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">✅</div>
                     <div class="stat-info">
-                        <h3 id="publishedPosts">0</h3>
+                        <h3 id="publishedPosts">{{ stats.published_posts }}</h3>
                         <p>Published</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">⏰</div>
                     <div class="stat-info">
-                        <h3 id="scheduledPosts">0</h3>
+                        <h3 id="scheduledPosts">{{ stats.scheduled_posts }}</h3>
                         <p>Scheduled</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">📝</div>
+                    <div class="stat-icon">🔧</div>
                     <div class="stat-info">
-                        <h3 id="pendingTitles">0</h3>
-                        <p>Pending Titles</p>
+                        <h3 id="apiStatus">{% if stats.api_configured %}✅{% else %}❌{% endif %}</h3>
+                        <p>API Status</p>
                     </div>
                 </div>
             </div>
@@ -74,405 +99,32 @@
             <div class="activity-section">
                 <h3>Recent Activity</h3>
                 <div class="activity-list" id="activityList">
-                    <!-- Activity items will be loaded here -->
-                </div>
-            </div>
-
-            <!-- Performance Chart -->
-            <div class="chart-section">
-                <h3>Performance Overview</h3>
-                <canvas id="performanceChart" width="400" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <div id="uploadModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeUploadModal()">&times;</span>
-            <h3>Upload Multiple Titles</h3>
-            <div class="upload-options">
-                <div class="upload-option" onclick="showFileUpload()">
-                    <div class="upload-icon">📁</div>
-                    <h4>Upload File</h4>
-                    <p>CSV, Excel, or TXT</p>
-                </div>
-                <div class="upload-option" onclick="showManualInput()">
-                    <div class="upload-icon">✍️</div>
-                    <h4>Manual Input</h4>
-                    <p>Type titles manually</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-</body>
-    </html>            <!-- Bulk Upload Tab -->
-                    <div class="tab-content active" id="bulk-upload-tab">
-                        <div class="card">
-                            <h2>Upload Multiple Titles</h2>
-                            <p>Upload file CSV, Excel, atau TXT yang berisi daftar judul artikel</p>
-                            
-                            <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                                <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this.files[0])">
-                                <div>📁 Click to upload file</div>
-                                <small>Supported formats: CSV, XLSX, TXT</small>
-                            </div>
-                            
-                            <div id="uploadProgress" style="display: none;">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                                </div>
-                                <div id="uploadStatus">Processing...</div>
+                    {% for post in posts %}
+                    <div class="activity-item {% if post.status == 'failed' %}failed{% elif post.status == 'scheduled' %}scheduled{% endif %}">
+                        <div class="activity-content">
+                            <strong>{{ post.title }}</strong>
+                            <div class="activity-meta">
+                                Status: <span class="status-{{ post.status }}">{{ post.status }}</span>
+                                • {{ post.publish_date[:10] }}
                             </div>
                         </div>
+                        {% if post.url %}
+                        <a href="{{ post.url }}" target="_blank" class="btn btn-small">View</a>
+                        {% endif %}
                     </div>
-                    
-                    <!-- Single Post Tab -->
-                    <div class="tab-content" id="single-post-tab">
-                        <div class="card">
-                            <h2>Create Single Post</h2>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Article Title</label>
-                                    <input type="text" id="singleTitle" placeholder="Enter article title">
-                                </div>
-                                <div class="form-group">
-                                    <label>Keywords (comma separated)</label>
-                                    <input type="text" id="singleKeywords" placeholder="keyword1, keyword2, keyword3">
-                                </div>
-                                <div class="form-group">
-                                    <label>Publish Date & Time</label>
-                                    <input type="datetime-local" id="singlePublishDate">
-                                </div>
-                                <div class="form-group">
-                                    <label>Action</label>
-                                    <div>
-                                        <button class="btn" onclick="addSinglePost()">Schedule Post</button>
-                                        <button class="btn btn-secondary" onclick="addToBulk()">Add to Bulk</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Scheduled Posts Tab -->
-                    <div class="tab-content" id="scheduled-tab">
-                        <div class="card">
-                            <h2>Scheduled Posts</h2>
-                            <div class="posts-list" id="scheduledPostsList">
-                                <!-- Posts will be loaded here -->
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Bulk Titles Tab -->
-                    <div class="tab-content" id="bulk-titles-tab">
-                        <div class="card">
-                            <h2>Bulk Titles Management</h2>
-                            <div class="posts-list" id="bulkTitlesList">
-                                <!-- Bulk titles will be loaded here -->
-                            </div>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Load initial data
-        document.addEventListener('DOMContentLoaded', function() {
-            loadStats();
-            loadScheduledPosts();
-            loadBulkTitles();
-            loadConfig();
-        });
-        
-        // Tab switching
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-header').forEach(header => {
-                header.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-        }
-        
-        // Handle file upload
-        async function handleFileUpload(file) {
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            document.getElementById('uploadProgress').style.display = 'block';
-            
-            try {
-                const response = await fetch('/bulk-upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    document.getElementById('uploadStatus').textContent = 
-                        `Successfully uploaded ${result.titles.length} titles`;
-                    document.getElementById('progressFill').style.width = '100%';
-                    
-                    // Reload data
-                    setTimeout(() => {
-                        loadStats();
-                        loadBulkTitles();
-                        document.getElementById('uploadProgress').style.display = 'none';
-                        document.getElementById('progressFill').style.width = '0%';
-                    }, 2000);
-                } else {
-                    document.getElementById('uploadStatus').textContent = 'Error: ' + result.error;
-                }
-            } catch (error) {
-                document.getElementById('uploadStatus').textContent = 'Error: ' + error.message;
-            }
-        }
-        
-        // Add single post
-        async function addSinglePost() {
-            const title = document.getElementById('singleTitle').value;
-            const keywords = document.getElementById('singleKeywords').value;
-            const publishDate = document.getElementById('singlePublishDate').value;
-            
-            if (!title) {
-                alert('Please enter a title');
-                return;
-            }
-            
-            const data = {
-                title: title,
-                keywords: keywords ? keywords.split(',').map(k => k.trim()) : [],
-                publish_date: publishDate
-            };
-            
-            try {
-                const response = await fetch('/add-title', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('Post added successfully!');
-                    document.getElementById('singleTitle').value = '';
-                    document.getElementById('singleKeywords').value = '';
-                    loadStats();
-                    loadScheduledPosts();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Add to bulk titles
-        async function addToBulk() {
-            const title = document.getElementById('singleTitle').value;
-            const keywords = document.getElementById('singleKeywords').value;
-            
-            if (!title) {
-                alert('Please enter a title');
-                return;
-            }
-            
-            const data = {
-                title: title,
-                keywords: keywords ? keywords.split(',').map(k => k.trim()) : []
-            };
-            
-            try {
-                const response = await fetch('/add-title', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('Title added to bulk list!');
-                    document.getElementById('singleTitle').value = '';
-                    document.getElementById('singleKeywords').value = '';
-                    loadStats();
-                    loadBulkTitles();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Schedule all bulk titles
-        async function scheduleBulk() {
-            try {
-                const response = await fetch('/schedule-bulk', {
-                    method: 'POST'
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert(result.message);
-                    loadStats();
-                    loadScheduledPosts();
-                    loadBulkTitles();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Update configuration
-        async function updateConfig() {
-            const frequency = document.getElementById('postingFrequency').value;
-            const time = document.getElementById('postingTime').value;
-            
-            const config = {
-                posting_schedule: {
-                    frequency: frequency,
-                    time: time,
-                    days: frequency === 'weekly' ? 
-                        Array.from(document.querySelectorAll('input[name="days"]:checked'))
-                            .map(cb => cb.value) : 
-                        ["monday", "wednesday", "friday"],
-                    max_posts_per_day: 2
-                }
-            };
-            
-            try {
-                const response = await fetch('/config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(config)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('Configuration updated successfully!');
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Load functions
-        async function loadStats() {
-            const response = await fetch('/');
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Extract stats from the page (you might want to create a separate stats endpoint)
-            // This is a simplified version
-        }
-        
-        async function loadScheduledPosts() {
-            const response = await fetch('/posts?page=1');
-            const data = await response.json();
-            
-            const postsList = document.getElementById('scheduledPostsList');
-            postsList.innerHTML = '';
-            
-            data.posts.forEach(post => {
-                const postElement = document.createElement('div');
-                postElement.className = 'post-item';
-                postElement.innerHTML = `
-                    <div style="flex: 1;">
-                        <strong>${post.title}</strong>
-                        <div style="font-size: 0.875rem; color: #6b7280;">
-                            ${new Date(post.publish_date).toLocaleString()}
-                        </div>
-                    </div>
-                    <span class="post-status status-${post.status}">${post.status}</span>
-                `;
-                postsList.appendChild(postElement);
-            });
-        }
-        
-        async function loadBulkTitles() {
-            const response = await fetch('/bulk-titles');
-            const titles = await response.json();
-            
-            const titlesList = document.getElementById('bulkTitlesList');
-            titlesList.innerHTML = '';
-            
-            titles.forEach(title => {
-                const titleElement = document.createElement('div');
-                titleElement.className = 'post-item';
-                titleElement.innerHTML = `
-                    <div style="flex: 1;">
-                        <strong>${title.title}</strong>
-                        <div style="font-size: 0.875rem; color: #6b7280;">
-                            Added: ${new Date(title.added_at).toLocaleDateString()}
-                        </div>
-                    </div>
-                    <span class="post-status status-${title.status}">${title.status}</span>
-                `;
-                titlesList.appendChild(titleElement);
-            });
-        }
-        
-        function loadConfig() {
-            // This would load the current configuration into the form
-            // For now, we'll just show/hide weekly days based on frequency
-            document.getElementById('postingFrequency').addEventListener('change', function() {
-                document.getElementById('weeklyDays').style.display = 
-                    this.value === 'weekly' ? 'block' : 'none';
-            });
-        }
-        
-        // Generate title ideas
-        function generateTitles() {
-            const seasonalTopics = [
-                "Panduan Investasi Crypto untuk Pemula di Tahun 2024",
-                "Analisis Market Bitcoin: Prediksi Harga dan Trend",
-                "10 Altcoin Potensial dengan ROI Tinggi di Kuartal Ini",
-                "Cara Aman Menyimpan Crypto: Wallet vs Exchange",
-                "Understanding Blockchain Technology: Dasar-dasar untuk Pemula",
-                "Strategi Trading Crypto yang Menguntungkan di Market Volatile",
-                "Review Platform Mining Cloud Terbaik 2024",
-                "Pajak Cryptocurrency: Panduan Lengkap untuk Trader Indonesia",
-                "NFT dan Masa Depan Digital Asset di Indonesia",
-                "Perbandingan Exchange Crypto Terpopuler: Mana yang Terbaik?"
-            ];
-            
-            // Add these to bulk titles
-            seasonalTopics.forEach(title => {
-                // Simulate adding titles (you would make API calls here)
-                console.log('Adding title:', title);
-            });
-            
-            alert('Generated 10 seasonal title ideas! Check the Bulk Titles tab.');
-        }
+        // Show warning if API not configured
+        {% if not stats.api_configured %}
+        setTimeout(() => {
+            alert('⚠️ Please configure API keys in Settings to enable all features.');
+        }, 1000);
+        {% endif %}
     </script>
 </body>
-</html>
+                    </html>
