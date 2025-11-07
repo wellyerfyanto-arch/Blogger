@@ -12,14 +12,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Format dates
     const dates = document.querySelectorAll('.date-format');
     dates.forEach(element => {
-        const date = new Date(element.textContent);
-        element.textContent = date.toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        try {
+            const date = new Date(element.textContent);
+            element.textContent = date.toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            console.log('Date formatting error:', e);
+        }
     });
 });
 
@@ -55,3 +59,30 @@ setInterval(checkAPIStatus, 60000);
 
 // Initial check
 checkAPIStatus();
+
+// Global utility functions untuk modal
+window.showProgressModal = function(message) {
+    const modal = document.getElementById('progressModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('progressText').textContent = message;
+        document.getElementById('progressFill').style.width = '0%';
+        document.getElementById('progressResults').innerHTML = '';
+        document.getElementById('closeProgress').style.display = 'none';
+    }
+};
+
+window.hideProgressModal = function() {
+    const modal = document.getElementById('progressModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+window.updateProgress = function(message, percent) {
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    
+    if (progressText) progressText.textContent = message;
+    if (progressFill) progressFill.style.width = percent + '%';
+};
