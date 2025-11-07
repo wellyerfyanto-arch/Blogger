@@ -1,176 +1,29 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Crypto Auto Poster</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .login-container {
-            background: white;
-            padding: 3rem;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        .logo h1 {
-            color: #333;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .logo p {
-            color: #666;
-            font-size: 1rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .btn {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-bottom: 1rem;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .alert {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #dc2626;
-        }
-        
-        .success {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #065f46;
-        }
-        
-        .info-box {
-            background: #dbeafe;
-            color: #1e40af;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .debug-link {
-            text-align: center;
-            margin-top: 1rem;
-        }
-        
-        .debug-link a {
-            color: #666;
-            font-size: 0.8rem;
-            text-decoration: none;
-        }
-        
-        .debug-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="logo">
-            <h1>🔐 Crypto Poster</h1>
-            <p>Secure Auto Posting System</p>
-        </div>
+{% extends "base.html" %}
+
+{% block title %}Login - Auto Posting Blog{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <h2>🔐 Login</h2>
+        <p>Enter your master key to access the system</p>
         
         {% if error %}
-        <div class="alert">
-            {{ error }}
-        </div>
-        {% endif %}
-        
-        {% if request.args.get('success') %}
-        <div class="success">
-            ✅ Master key set successfully! You can now login.
-        </div>
+        <div class="alert alert-error">{{ error }}</div>
         {% endif %}
         
         <form method="POST">
             <div class="form-group">
-                <label for="master_key">Master Key</label>
-                <input type="password" id="master_key" name="master_key" 
-                       placeholder="Enter your master key" required autofocus>
+                <label for="master_key">Master Key:</label>
+                <input type="password" id="master_key" name="master_key" required autofocus>
             </div>
-            
-            <button type="submit" class="btn">Login to Dashboard</button>
+            <button type="submit" class="btn-primary">Login</button>
         </form>
         
-        <div class="info-box">
-            <strong>First time setup?</strong><br>
-            Enter any master key to set it for the first time. 
-            <strong>Remember this key</strong> as it will be required for future access.
-            After login, configure your API keys in the Settings page.
-        </div>
-        
-        <div class="debug-link">
-            <a href="/debug" target="_blank">System Debug Info</a>
+        <div class="login-info">
+            <p><strong>First time?</strong> Enter any master key to set it up.</p>
+            <p><strong>Note:</strong> Remember your master key as it cannot be recovered.</p>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
