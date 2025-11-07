@@ -653,7 +653,205 @@ def process_txt_file(file):
     except Exception as e:
         logger.error(f"Error processing TXT file: {str(e)}", exc_info=True)
         return titles, {}
+# Tambahkan endpoint baru untuk posting langsung
+@app.route('/api/posts/immediate', methods=['POST'])
+@require_auth
+def create_immediate_post():
+    """Create and publish post immediately"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        title = data.get('title')
+        keywords = data.get('keywords', [])
+        
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+        
+        # Check if API keys are configured
+        if not api_keys_manager.keys.get('is_configured'):
+            return jsonify({"error": "API keys not configured. Please set up API keys first."}), 400
+        
+        logger.info(f"🚀 Creating immediate post: {title}")
+        
+        # Generate article content
+        article_data = generate_article(title, keywords)
+        logger.info(f"📝 Generated article: {article_data['word_count']} words")
+        
+        # Generate image if enabled
+        image_url = None
+        if auto_poster.posting_config['content_settings']['auto_generate_images']:
+            logger.info("🎨 Generating image...")
+            image_prompt = generate_image_prompt(title)
+            image_url = create_image(image_prompt)
+            if image_url:
+                logger.info(f"🖼️ Generated image: {image_url}")
+        
+        # Check plagiarism if enabled
+        plagiarism_score = 0
+        if auto_poster.posting_config['content_settings']['plagiarism_check']:
+            logger.info("🔍 Checking plagiarism...")
+            plagiarism_score = check_plagiarism(article_data['content'])
+            if plagiarism_score > 15:
+                return jsonify({"error": f"Plagiarism score too high: {plagiarism_score}%"}), 400
+            logger.info(f"✅ Plagiarism check passed: {plagiarism_score}%")
+        
+        # Post to Blogger
+        logger.info("📮 Posting to Blogger...")
+        post_url = post_to_blogger(
+            title,
+            article_data['content'],
+            article_data['meta_description'],
+            image_url,
+            article_data['keywords']
+        )
+        
+        # Create post record
+        post_data = {
+            "id": len(auto_poster.scheduled_posts) + 1,
+            "title": title,
+            "publish_date": datetime.now(TIMEZONE).isoformat(),
+            "status": "published",
+            "created_at": datetime.now(TIMEZONE).isoformat(),
+            "published_at": datetime.now(TIMEZONE).isoformat(),
+            "keywords": keywords,
+            "url": post_url,
+            "word_count": article_data['word_count'],
+            "image_url": image_url,
+            "type": "immediate",
+            "plagiarism_score": plagiarism_score
+        }
+        
+        auto_poster.scheduled_posts.append(post_data)
+        auto_poster.save_data()
+        
+        # Track performance
+        track_performance(post_url, title)
+        
+        logger.info(f"✅ Successfully published immediate post: {post_url}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Post published successfully!",
+            "post": post_data,
+            "url": post_url
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error creating immediate post: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
+@app.route('/api/posts/bulk-immediate', methods=['POST'])
+@require_auth
+def create_bulk_immediate_posts():
+    """Create and publish multiple posts immediately"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        titles = data.get('titles', [])
+        keywords_map = data.get('keywords_map', {})
+        
+        if not titles:
+            return jsonify({"error": "No titles provided"}), 400
+        
+        # Check if API keys are configured
+        if not api_keys_manager.keys.get('is_configured'):
+            return jsonify({"error": "API keys not configured. Please set up API keys first."}), 400
+        
+        logger.info(f"🚀 Creating {len(titles)} immediate posts")
+        
+        results = {
+            "successful": [],
+            "failed": [],
+            "total": len(titles)
+        }
+        
+        # Process each title
+        for i, title in enumerate(titles):
+            try:
+                logger.info(f"📝 Processing ({i+1}/{len(titles)}): {title}")
+                
+                keywords = keywords_map.get(title, [])
+                
+                # Generate article content
+                article_data = generate_article(title, keywords)
+                
+                # Generate image if enabled
+                image_url = None
+                if auto_poster.posting_config['content_settings']['auto_generate_images']:
+                    image_prompt = generate_image_prompt(title)
+                    image_url = create_image(image_prompt)
+                
+                # Check plagiarism if enabled
+                plagiarism_score = 0
+                if auto_poster.posting_config['content_settings']['plagiarism_check']:
+                    plagiarism_score = check_plagiarism(article_data['content'])
+                    if plagiarism_score > 15:
+                        raise Exception(f"Plagiarism score too high: {plagiarism_score}%")
+                
+                # Post to Blogger
+                post_url = post_to_blogger(
+                    title,
+                    article_data['content'],
+                    article_data['meta_description'],
+                    image_url,
+                    article_data['keywords']
+                )
+                
+                # Create post record
+                post_data = {
+                    "id": len(auto_poster.scheduled_posts) + 1,
+                    "title": title,
+                    "publish_date": datetime.now(TIMEZONE).isoformat(),
+                    "status": "published",
+                    "created_at": datetime.now(TIMEZONE).isoformat(),
+                    "published_at": datetime.now(TIMEZONE).isoformat(),
+                    "keywords": keywords,
+                    "url": post_url,
+                    "word_count": article_data['word_count'],
+                    "image_url": image_url,
+                    "type": "immediate_bulk",
+                    "plagiarism_score": plagiarism_score
+                }
+                
+                auto_poster.scheduled_posts.append(post_data)
+                
+                results["successful"].append({
+                    "title": title,
+                    "url": post_url,
+                    "word_count": article_data['word_count']
+                })
+                
+                logger.info(f"✅ Published: {title}")
+                
+                # Small delay between posts to avoid rate limiting
+                time.sleep(2)
+                
+            except Exception as e:
+                error_msg = f"Failed to publish '{title}': {str(e)}"
+                logger.error(f"❌ {error_msg}")
+                results["failed"].append({
+                    "title": title,
+                    "error": str(e)
+                })
+        
+        # Save all posts
+        auto_poster.save_data()
+        
+        logger.info(f"🎉 Bulk immediate posting completed: {len(results['successful'])} successful, {len(results['failed'])} failed")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Published {len(results['successful'])} posts successfully",
+            "results": results
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error in bulk immediate posting: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 # Routes
 @app.route('/')
 def index():
