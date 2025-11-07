@@ -1,3 +1,106 @@
+/* Reset dan Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Navigation */
+.navbar {
+    background: #2c3e50;
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    margin-left: 1.5rem;
+    transition: opacity 0.3s;
+}
+
+.nav-links a:hover {
+    opacity: 0.8;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+.status-good {
+    color: #27ae60;
+}
+
+.status-bad {
+    color: #e74c3c;
+}
+
+/* Actions Grid */
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.action-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.action-card h3 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
 /* Post Options Tabs */
 .post-options, .upload-options {
     display: flex;
@@ -42,6 +145,61 @@
     margin: 0.25rem 0;
 }
 
+/* Forms */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-group small {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+/* Buttons */
+button, .btn-primary, .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2980b9;
+}
+
+.btn-secondary {
+    background: #95a5a6;
+    color: white;
+    margin-left: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: #7f8c8d;
+}
+
 /* Immediate Post Button */
 .btn-immediate {
     background: #27ae60 !important;
@@ -62,6 +220,172 @@
     width: 100%;
     text-align: left;
     padding: 0.75rem;
+}
+
+/* Content Sections */
+.content-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 2rem 0;
+}
+
+.content-section h2 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+/* Posts and Titles Lists */
+.posts-list, .titles-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.post-item, .title-item {
+    padding: 1rem;
+    border-left: 4px solid #ddd;
+    background: #f8f9fa;
+}
+
+.status-published {
+    border-left-color: #27ae60;
+}
+
+.status-scheduled {
+    border-left-color: #f39c12;
+}
+
+.status-failed {
+    border-left-color: #e74c3c;
+}
+
+.status-pending {
+    border-left-color: #3498db;
+}
+
+.post-meta {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0.5rem 0;
+}
+
+.post-link {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.post-link:hover {
+    text-decoration: underline;
+}
+
+/* Login Page */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+.login-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-card h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.login-info {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* Alerts */
+.alert {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.alert-info {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Test Results */
+.test-results {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.test-result {
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+}
+
+.test-result.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.test-result.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Sample Links */
+.sample-links {
+    margin-top: 1rem;
+}
+
+.sample-links a {
+    display: inline-block;
+    margin-right: 1rem;
+    color: #3498db;
+    text-decoration: none;
+}
+
+.sample-links a:hover {
+    text-decoration: underline;
+}
+
+/* No Data State */
+.no-data {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* Scheduler Status */
+.scheduler-status {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.scheduler-status h4 {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
 }
 
 /* Progress Modal */
@@ -130,20 +454,38 @@
     font-size: 0.875rem;
 }
 
-/* Scheduler Status */
-.scheduler-status {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #eee;
-}
-
-.scheduler-status h4 {
-    margin-bottom: 0.5rem;
-    color: #2c3e50;
+/* Footer */
+.footer {
+    background: #34495e;
+    color: white;
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: 3rem;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .nav-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-links {
+        text-align: center;
+    }
+    
+    .nav-links a {
+        margin: 0 0.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
     .post-options, .upload-options {
         flex-direction: column;
     }
