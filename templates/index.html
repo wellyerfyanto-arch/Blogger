@@ -469,6 +469,257 @@ async function loadBulkTitles() {
             </div>
         </div>
     </div>
+    <!-- Tambahkan di bagian Main Content setelah stats grid -->
+<div class="scheduler-controls card">
+    <h3>🕒 Scheduler Controls</h3>
+    
+    <div class="scheduler-status" id="schedulerStatus">
+        <div class="status-item">
+            <span class="status-label">Scheduler Status:</span>
+            <span class="status-value" id="schedulerRunning">Checking...</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Next Run:</span>
+            <span class="status-value" id="nextRun">Checking...</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Jobs Scheduled:</span>
+            <span class="status-value" id="jobsCount">0</span>
+        </div>
+    </div>
+    
+    <div class="scheduler-actions">
+        <button class="btn btn-small btn-primary" onclick="triggerScheduler()">
+            🔧 Trigger Now
+        </button>
+        <button class="btn btn-small btn-secondary" onclick="restartScheduler()">
+            🔄 Restart Scheduler
+        </button>
+        <button class="btn btn-small btn-info" onclick="checkPostQueue()">
+            📋 Check Queue
+        </button>
+    </div>
+    
+    <div id="queueResult" style="display: none; margin-top: 1rem;"></div>
+</div>
+
+<style>
+.scheduler-controls {
+    margin-bottom: 2rem;
+}
+
+.scheduler-status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-label {
+    font-weight: 600;
+    color: #374151;
+}
+
+.status-value {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.status-running {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-stopped {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.status-unknown {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.scheduler-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.queue-info {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.queue-item {
+    padding: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.queue-item:last-child {
+    border-bottom: none;
+}
+</style>
+
+<script>
+// Scheduler control functions
+async function checkSchedulerStatus() {
+    try {
+        const response = await fetch('/api/scheduler/status');
+        const status = await response.json();
+        
+        // Update status display
+        const statusElement = document.getElementById('schedulerRunning');
+        const nextRunElement = document.getElementById('nextRun');
+        const jobsCountElement = document.getElementById('jobsCount');
+        
+        if (status.scheduler_running && status.scheduler_thread_alive) {
+            statusElement.textContent = '✅ Running';
+            statusElement.className = 'status-value status-running';
+        } else {
+            statusElement.textContent = '❌ Stopped';
+            statusElement.className = 'status-value status-stopped';
+        }
+        
+        nextRunElement.textContent = status.next_run || 'Unknown';
+        jobsCountElement.textContent = status.scheduled_jobs;
+        
+    } catch (error) {
+        console.error('Error checking scheduler status:', error);
+        document.getElementById('schedulerRunning').textContent = '❌ Error';
+        document.getElementById('schedulerRunning').className = 'status-value status-stopped';
+    }
+}
+
+async function triggerScheduler() {
+    try {
+        const response = await fetch('/api/scheduler/trigger', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('✅ Scheduler triggered successfully!');
+            // Refresh posts list
+            loadScheduledPosts();
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error triggering scheduler: ' + error.message);
+    }
+}
+
+async function restartScheduler() {
+    try {
+        const response = await fetch('/api/scheduler/restart', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('✅ Scheduler restarted successfully!');
+            // Refresh status
+            setTimeout(checkSchedulerStatus, 2000);
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error restarting scheduler: ' + error.message);
+    }
+}
+
+async function checkPostQueue() {
+    try {
+        const response = await fetch('/api/posts/check-queue');
+        const queue = await response.json();
+        
+        const resultDiv = document.getElementById('queueResult');
+        resultDiv.style.display = 'block';
+        
+        let html = `
+            <div class="queue-info">
+                <h4>📋 Post Queue Status</h4>
+                <p><strong>Current Time:</strong> ${new Date(queue.current_time).toLocaleString()}</p>
+                <p><strong>Scheduled Posts:</strong> ${queue.scheduled_posts_count}</p>
+                <p><strong>Posts Due:</strong> ${queue.posts_due_count}</p>
+                <p><strong>Upcoming Posts:</strong> ${queue.upcoming_posts_count}</p>
+        `;
+        
+        if (queue.posts_due_count > 0) {
+            html += `<h5>📅 Posts Ready to Publish:</h5>`;
+            queue.posts_due.forEach(post => {
+                html += `
+                    <div class="queue-item">
+                        <strong>${post.title}</strong><br>
+                        <small>Scheduled: ${new Date(post.scheduled_date).toLocaleString()}</small>
+                    </div>
+                `;
+            });
+        }
+        
+        if (queue.upcoming_posts_count > 0) {
+            html += `<h5>⏳ Upcoming Posts:</h5>`;
+            queue.upcoming_posts.slice(0, 5).forEach(post => {
+                html += `
+                    <div class="queue-item">
+                        <strong>${post.title}</strong><br>
+                        <small>Scheduled: ${new Date(post.scheduled_date).toLocaleString()} (in ${post.days_until} days)</small>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `</div>`;
+        resultDiv.innerHTML = html;
+        
+    } catch (error) {
+        const resultDiv = document.getElementById('queueResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div class="error">❌ Error checking queue: ${error.message}</div>`;
+    }
+}
+
+// Check scheduler status periodically
+setInterval(checkSchedulerStatus, 30000); // Every 30 seconds
+checkSchedulerStatus(); // Initial check
+
+// Load scheduled posts function
+async function loadScheduledPosts() {
+    try {
+        const response = await fetch('/api/posts?page=1');
+        const data = await response.json();
+        
+        // Update posts count in stats
+        document.getElementById('scheduledPosts').textContent = 
+            data.posts.filter(p => p.status === 'scheduled').length;
+        document.getElementById('publishedPosts').textContent = 
+            data.posts.filter(p => p.status === 'published').length;
+            
+    } catch (error) {
+        console.error('Error loading scheduled posts:', error);
+    }
+}
+</script>
 
     <script>
         // Show warning if API not configured
