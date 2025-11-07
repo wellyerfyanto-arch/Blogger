@@ -1,272 +1,127 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Settings - Crypto Auto Poster</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .api-status {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-        
-        .status-configured {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status-not-configured {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .test-results {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
-            background: #f8fafc;
-        }
-        
-        .test-success {
-            color: #065f46;
-            background: #d1fae5;
-            padding: 0.5rem;
-            border-radius: 4px;
-            margin: 0.25rem 0;
-        }
-        
-        .test-error {
-            color: #dc2626;
-            background: #fee2e2;
-            padding: 0.5rem;
-            border-radius: 4px;
-            margin: 0.25rem 0;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-            border: 2px solid #d1d5db;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="logo">
-                <h1>🤖 Crypto Poster</h1>
+{% extends "base.html" %}
+
+{% block title %}Settings - Auto Posting Blog{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h2>⚙️ API Settings</h2>
+    
+    <div class="settings-card">
+        <form id="apiSettingsForm">
+            <div class="form-group">
+                <label for="openai_api_key">OpenAI API Key:</label>
+                <input type="text" id="openai_api_key" value="{{ keys.openai_api_key }}" placeholder="sk-...">
+                <small>Required for content generation</small>
             </div>
-            <nav class="nav">
-                <a href="{{ url_for('index') }}" class="nav-item">📊 Dashboard</a>
-                <a href="{{ url_for('settings') }}" class="nav-item active">🔧 API Settings</a>
-            </nav>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <header class="header">
-                <h2>API Settings</h2>
-                <div class="api-status {% if keys.is_configured %}status-configured{% else %}status-not-configured{% endif %}">
-                    {% if keys.is_configured %}
-                    ✅ API Configured
-                    {% else %}
-                    ⚠️ API Not Configured
-                    {% endif %}
-                </div>
-            </header>
-
-            <div class="card">
-                <h3>API Keys Configuration</h3>
-                <p>Enter your API keys below. They will be stored securely on the server.</p>
-
-                <form id="apiKeysForm">
-                    <div class="form-group">
-                        <label for="openai_api_key">OpenAI API Key</label>
-                        <input type="password" id="openai_api_key" name="openai_api_key" 
-                               placeholder="sk-..." value="{{ keys.openai_api_key }}">
-                        <small>Required for content generation</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="hf_api_key">Hugging Face API Key</label>
-                        <input type="password" id="hf_api_key" name="hf_api_key" 
-                               placeholder="hf_..." value="{{ keys.hf_api_key }}">
-                        <small>Required for image generation</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="blogger_blog_id">Blogger Blog ID</label>
-                        <input type="text" id="blogger_blog_id" name="blogger_blog_id" 
-                               placeholder="123456789..." value="{{ keys.blogger_blog_id }}">
-                        <small>Your Blogger blog ID (found in blog URL)</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="google_client_id">Google Client ID (Optional)</label>
-                        <input type="text" id="google_client_id" name="google_client_id" 
-                               placeholder="...googleusercontent.com" value="{{ keys.google_client_id }}">
-                        <small>For Blogger API authentication</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="google_client_secret">Google Client Secret (Optional)</label>
-                        <input type="password" id="google_client_secret" name="google_client_secret" 
-                               placeholder="GOCSPX-..." value="{{ keys.google_client_secret }}">
-                        <small>For Blogger API authentication</small>
-                    </div>
-
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-secondary" onclick="testApiKeys()">
-                            🧪 Test API Keys
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            💾 Save Settings
-                        </button>
-                    </div>
-                </form>
-
-                <div id="testResults" class="test-results" style="display: none;">
-                    <h4>Test Results</h4>
-                    <div id="testResultsContent"></div>
-                </div>
+            
+            <div class="form-group">
+                <label for="hf_api_key">Hugging Face API Key:</label>
+                <input type="text" id="hf_api_key" value="{{ keys.hf_api_key }}" placeholder="hf_...">
+                <small>Required for image generation</small>
             </div>
-
-            <div class="card">
-                <h3>Current Configuration</h3>
-                <div id="currentConfig">
-                    <p><strong>OpenAI:</strong> {{ keys.openai_api_key }}</p>
-                    <p><strong>Hugging Face:</strong> {{ keys.hf_api_key }}</p>
-                    <p><strong>Blogger Blog ID:</strong> {{ keys.blogger_blog_id }}</p>
-                    <p><strong>Google Client ID:</strong> {{ keys.google_client_id }}</p>
-                    <p><strong>Google Client Secret:</strong> {{ keys.google_client_secret }}</p>
-                </div>
+            
+            <div class="form-group">
+                <label for="blogger_blog_id">Blogger Blog ID:</label>
+                <input type="text" id="blogger_blog_id" value="{{ keys.blogger_blog_id }}" placeholder="1234567890123456789">
+                <small>Your Blogger blog ID</small>
             </div>
-        </div>
+            
+            <div class="form-group">
+                <label for="google_client_id">Google Client ID:</label>
+                <input type="text" id="google_client_id" value="{{ keys.google_client_id }}" placeholder="xxx.apps.googleusercontent.com">
+                <small>Google OAuth client ID</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="google_client_secret">Google Client Secret:</label>
+                <input type="text" id="google_client_secret" value="{{ keys.google_client_secret }}" placeholder="GOCSPX-...">
+                <small>Google OAuth client secret</small>
+            </div>
+            
+            <button type="submit" class="btn-primary">Save Settings</button>
+            <button type="button" id="testSettingsBtn" class="btn-secondary">Test Connections</button>
+        </form>
     </div>
+    
+    <div id="testResults" class="test-results" style="display: none;"></div>
+</div>
 
-    <script>
-        // Test API keys
-        async function testApiKeys() {
-            const formData = new FormData(document.getElementById('apiKeysForm'));
-            const data = Object.fromEntries(formData.entries());
-            
-            try {
-                const response = await fetch('/api/settings/test', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                const resultsDiv = document.getElementById('testResults');
-                const contentDiv = document.getElementById('testResultsContent');
-                
-                resultsDiv.style.display = 'block';
-                
-                if (response.ok) {
-                    let html = '';
-                    for (const [service, testResult] of Object.entries(result.results)) {
-                        if (testResult.status === 'success') {
-                            html += `<div class="test-success">
-                                <strong>${service}:</strong> ${testResult.message}
-                            </div>`;
-                        } else {
-                            html += `<div class="test-error">
-                                <strong>${service}:</strong> ${testResult.message}
-                            </div>`;
-                        }
-                    }
-                    contentDiv.innerHTML = html;
-                } else {
-                    contentDiv.innerHTML = `<div class="test-error">Error: ${result.error}</div>`;
-                }
-            } catch (error) {
-                document.getElementById('testResultsContent').innerHTML = 
-                    `<div class="test-error">Error: ${error.message}</div>`;
-                document.getElementById('testResults').style.display = 'block';
+<script>
+document.getElementById('apiSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        openai_api_key: document.getElementById('openai_api_key').value,
+        hf_api_key: document.getElementById('hf_api_key').value,
+        blogger_blog_id: document.getElementById('blogger_blog_id').value,
+        google_client_id: document.getElementById('google_client_id').value,
+        google_client_secret: document.getElementById('google_client_secret').value
+    };
+    
+    fetch('/api/settings/keys', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Settings saved successfully!');
+        }
+    })
+    .catch(error => {
+        alert('Error saving settings: ' + error);
+    });
+});
+
+document.getElementById('testSettingsBtn').addEventListener('click', function() {
+    const formData = {
+        openai_api_key: document.getElementById('openai_api_key').value,
+        hf_api_key: document.getElementById('hf_api_key').value
+    };
+    
+    fetch('/api/settings/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('testResults');
+        resultsDiv.style.display = 'block';
+        
+        let html = '<h3>Test Results:</h3>';
+        
+        if (data.results) {
+            for (const [service, result] of Object.entries(data.results)) {
+                html += `
+                    <div class="test-result ${result.status}">
+                        <strong>${service.toUpperCase()}:</strong> 
+                        ${result.status === 'success' ? '✅' : '❌'} 
+                        ${result.message}
+                    </div>
+                `;
             }
+        } else if (data.error) {
+            html += `<div class="test-result error">Error: ${data.error}</div>`;
         }
         
-        // Save API keys
-        document.getElementById('apiKeysForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
-            
-            try {
-                const response = await fetch('/api/settings/keys', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('API keys saved successfully!');
-                    // Update displayed keys
-                    document.getElementById('currentConfig').innerHTML = `
-                        <p><strong>OpenAI:</strong> ${result.keys.openai_api_key}</p>
+        resultsDiv.innerHTML = html;
+    })
+    .catch(error => {
+        const resultsDiv = document.getElementById('testResults');
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = `<div class="test-result error">Test failed: ${error}</div>`;
+    });
+});
+</script>
+{% endblock %}               <p><strong>OpenAI:</strong> ${result.keys.openai_api_key}</p>
                         <p><strong>Hugging Face:</strong> ${result.keys.hf_api_key}</p>
                         <p><strong>Blogger Blog ID:</strong> ${result.keys.blogger_blog_id}</p>
                         <p><strong>Google Client ID:</strong> ${result.keys.google_client_id}</p>
