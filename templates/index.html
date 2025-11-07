@@ -26,6 +26,358 @@
     </style>
 </head>
 <body>
+    <!-- Tambahkan modal untuk upload di templates/index.html -->
+<div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeUploadModal()">&times;</span>
+        <h3>Upload Titles</h3>
+        
+        <div class="upload-section">
+            <h4>Select File Type</h4>
+            <div class="file-type-selector">
+                <button type="button" class="file-type-btn active" data-type="csv">CSV File</button>
+                <button type="button" class="file-type-btn" data-type="txt">Text File</button>
+            </div>
+            
+            <div id="csvInstructions" class="instructions">
+                <h5>CSV Format:</h5>
+                <p>File should contain titles in the first column. Optional keywords in second column.</p>
+                <pre>title,keywords
+Cara Investasi Bitcoin,bitcoin,investasi,crypto
+Review Exchange Binance,binance,exchange,review</pre>
+                <a href="/static/samples/sample_titles.csv" download class="btn btn-small">Download CSV Template</a>
+            </div>
+            
+            <div id="txtInstructions" class="instructions" style="display: none;">
+                <h5>Text File Format:</h5>
+                <p>One title per line. No formatting needed.</p>
+                <pre>Cara Investasi Bitcoin
+Review Exchange Binance
+Panduan Trading Crypto</pre>
+                <a href="/static/samples/sample_titles.txt" download class="btn btn-small">Download TXT Template</a>
+            </div>
+            
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="fileInput">Select File</label>
+                    <input type="file" id="fileInput" name="file" accept=".csv,.txt" required>
+                    <div class="file-info" id="fileInfo">No file selected</div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        📤 Upload Titles
+                    </button>
+                </div>
+            </form>
+            
+            <div id="uploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="uploadStatus">Processing...</div>
+            </div>
+            
+            <div id="uploadResult" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.upload-section {
+    margin-top: 1rem;
+}
+
+.file-type-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.file-type-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e1e5e9;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.file-type-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.instructions {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.instructions pre {
+    background: #2d3748;
+    color: white;
+    padding: 0.75rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.875rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+}
+
+.file-info {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 0%;
+    transition: width 0.3s;
+}
+
+#uploadResult.success {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+#uploadResult.error {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+</style>
+
+<script>
+// Upload Modal Functions
+function showUploadModal() {
+    document.getElementById('uploadModal').style.display = 'block';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+    resetUploadForm();
+}
+
+function resetUploadForm() {
+    document.getElementById('uploadForm').reset();
+    document.getElementById('fileInfo').textContent = 'No file selected';
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('uploadResult').style.display = 'none';
+    document.getElementById('uploadResult').className = '';
+}
+
+// File type selection
+document.querySelectorAll('.file-type-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.file-type-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        const type = this.dataset.type;
+        document.getElementById('csvInstructions').style.display = type === 'csv' ? 'block' : 'none';
+        document.getElementById('txtInstructions').style.display = type === 'txt' ? 'block' : 'none';
+    });
+});
+
+// File input change
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        document.getElementById('fileInfo').textContent = 
+            `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    } else {
+        document.getElementById('fileInfo').textContent = 'No file selected';
+    }
+});
+
+// Form submission
+document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Show progress
+    const progressSection = document.getElementById('uploadProgress');
+    const progressFill = document.getElementById('progressFill');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    progressSection.style.display = 'block';
+    uploadBtn.disabled = true;
+    uploadStatus.textContent = 'Uploading file...';
+    progressFill.style.width = '30%';
+    
+    try {
+        const response = await fetch('/api/bulk-upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        progressFill.style.width = '70%';
+        uploadStatus.textContent = 'Processing titles...';
+        
+        const result = await response.json();
+        
+        progressFill.style.width = '100%';
+        uploadStatus.textContent = 'Complete!';
+        
+        // Show result
+        const resultDiv = document.getElementById('uploadResult');
+        resultDiv.style.display = 'block';
+        
+        if (response.ok) {
+            resultDiv.className = 'success';
+            resultDiv.innerHTML = `
+                <h4>✅ Upload Successful!</h4>
+                <p><strong>${result.count}</strong> titles added successfully.</p>
+                ${result.titles && result.titles.length > 0 ? `
+                <div style="max-height: 200px; overflow-y: auto; margin: 1rem 0;">
+                    <strong>First few titles:</strong>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                        ${result.titles.slice(0, 5).map(title => `<li>${title}</li>`).join('')}
+                    </ul>
+                    ${result.titles.length > 5 ? `<p>... and ${result.titles.length - 5} more</p>` : ''}
+                </div>
+                ` : ''}
+                <button class="btn btn-small" onclick="closeUploadModal(); loadBulkTitles();">
+                    View All Titles
+                </button>
+            `;
+            
+            // Refresh the bulk titles list
+            setTimeout(() => {
+                loadBulkTitles();
+            }, 1000);
+            
+        } else {
+            resultDiv.className = 'error';
+            resultDiv.innerHTML = `
+                <h4>❌ Upload Failed</h4>
+                <p><strong>Error:</strong> ${result.error}</p>
+                <p>Please check the file format and try again.</p>
+            `;
+        }
+        
+    } catch (error) {
+        const resultDiv = document.getElementById('uploadResult');
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'error';
+        resultDiv.innerHTML = `
+            <h4>❌ Upload Failed</h4>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <p>Please check your connection and try again.</p>
+        `;
+    } finally {
+        uploadBtn.disabled = false;
+    }
+});
+
+// Close modal when clicking outside
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('uploadModal');
+    if (e.target === modal) {
+        closeUploadModal();
+    }
+});
+
+// Load bulk titles function
+async function loadBulkTitles() {
+    try {
+        const response = await fetch('/api/bulk-titles');
+        const titles = await response.json();
+        
+        // Update UI with bulk titles count
+        document.getElementById('pendingTitles').textContent = 
+            titles.filter(t => t.status === 'pending').length;
+            
+    } catch (error) {
+        console.error('Error loading bulk titles:', error);
+    }
+}
+                    </script>
     <div class="dashboard">
         <!-- Sidebar -->
         <div class="sidebar">
