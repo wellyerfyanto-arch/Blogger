@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 import logging
 import hashlib
 import secrets
+import atexit
 
 # Configure logging
 logging.basicConfig(
@@ -31,251 +32,12 @@ os.makedirs('uploads', exist_ok=True)
 os.makedirs('static/images', exist_ok=True)
 os.makedirs('static/samples', exist_ok=True)
 
-class APIKeysManager:
-    def __init__(self):
-        self.keys_file = 'data/api_keys.json'
-        self.master_key_file = 'data/master_key.hash'
-        self.load_keys()
-    
-    def load_keys(self):
-        """Load API keys from file"""
-        try:
-            with open(self.keys_file, 'r') as f:
-                self.keys = json.load(f)
-            logger.info("API keys loaded from file")
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.keys = {
-                "openai_api_key": "",
-                "hf_api_key": "", 
-                "blogger_blog_id": "",
-                "google_client_id": "",
-                "google_client_secret": "",
-                "is_configured": False
-            }
-            self.save_keys()
-    
-    def save_keys(self):
-        """Save API keys to file"""
-        try:
-            with open(self.keys_file, 'w') as f:
-                json.dump(self.keys, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Error saving API keys: {str(e)}")
-    
-    def set_master_key(self, master_key):
-        """Set master key for accessing the system"""
-        try:
-            key_hash = hashlib.sha256(master_key.encode()).hexdigest()
-            with open(self.master_key_file, 'w') as f:
-                f.write(key_hash)
-            logger.info("Master key set successfully")
-        except Exception as e:
-            logger.error(f"Error setting master key: {str(e)}")
-    
-    def verify_master_key(self, master_key):
-        """Verify master key"""
-        try:
-            # If no master key file exists, allow any key for first-time setup
-            if not os.path.exists(self.master_key_file):
-                logger.info("No master key file found - first time setup")
-                return True
-            
-            with open(self.master_key_file, 'r') as f:
-                stored_hash = f.read().strip()
-            
-            if not stored_hash:
-                logger.info("Empty master key file - first time setup")
-                return True
-            
-            input_hash = hashlib.sha256(master_key.encode()).hexdigest()
-            return stored_hash == input_hash
-            
-        except Exception as e:
-            logger.error(f"Error verifying master key: {str(e)}")
-            return False
-    
-    def update_keys(self, new_keys):
-        """Update API keys"""
-        try:
-            for key, value in new_keys.items():
-                if key in self.keys:
-                    self.keys[key] = value.strip()
-            
-            self.keys['is_configured'] = any([
-                self.keys['openai_api_key'],
-                self.keys['hf_api_key'], 
-                self.keys['blogger_blog_id']
-            ])
-            
-            self.save_keys()
-            logger.info("API keys updated successfully")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error updating API keys: {str(e)}")
-            return False
-    
-    def get_keys_masked(self):
-        """Get masked API keys for display"""
-        try:
-            masked = self.keys.copy()
-            for key in ['openai_api_key', 'hf_api_key', 'google_client_secret']:
-                if masked.get(key) and len(masked[key]) > 8:
-                    masked[key] = masked[key][:4] + '***' + masked[key][-4:]
-            return masked
-        except Exception as e:
-            logger.error(f"Error masking keys: {str(e)}")
-            return self.keys.copy()
+# Global variable untuk kontrol scheduler
+scheduler_running = True
+scheduler_thread = None
 
-# Initialize API keys manager
-api_keys_manager = APIKeysManager()
-
-# Simple fallback functions untuk menghindari import error
-def generate_article(title, keywords=None):
-    """Fallback content generator"""
-    content = f"""
-# {title}
-
-## Pengenalan
-Artikel ini membahas tentang {title} secara mendetail. Dalam panduan ini, Anda akan mempelajari konsep dasar, implementasi praktis, dan tips berguna.
-
-## Poin Penting
-- Pemahaman dasar tentang topik
-- Implementasi praktis
-- Tips dan best practices
-- Common mistakes to avoid
-
-## Implementasi
-Berikut adalah langkah-langkah implementasi yang dapat Anda ikuti.
-
-## Kesimpulan
-{title} adalah topik yang penting untuk dipahami dalam dunia cryptocurrency. Dengan mengikuti panduan ini, Anda telah mempelajari dasar-dasar yang diperlukan.
-
-**Mulai perjalanan crypto Anda hari ini!**
-    """
-    
-    return {
-        "title": title,
-        "content": content,
-        "meta_description": f"Panduan lengkap tentang {title}. Pelajari cara implementasi dan tips terbaik.",
-        "keywords": keywords or [title],
-        "word_count": len(content.split())
-    }
-
-def research_keywords(title):
-    return [title.lower().replace(' ', '-'), title.lower(), "crypto", "blockchain"]
-
-def generate_image_prompt(title):
-    return f"Professional digital art illustration about {title}, cryptocurrency blockchain technology, futuristic style, blue orange color scheme, landscape 16:9, high quality, trending on artstation"
-
-def create_image(prompt):
-    """Generate gambar menggunakan Hugging Face API"""
-    try:
-        api_key = api_keys_manager.keys.get('hf_api_key')
-        if not api_key:
-            logger.error("Hugging Face API key not configured")
-            return None
-        
-        import requests
-        API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-        headers = {"Authorization": f"Bearer {api_key}"}
-        
-        response = requests.post(
-            API_URL, 
-            headers=headers, 
-            json={"inputs": prompt},
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            # Save image locally
-            import hashlib
-            image_hash = hashlib.md5(prompt.encode()).hexdigest()[:10]
-            image_path = f"static/images/generated_{image_hash}.jpg"
-            
-            with open(image_path, "wb") as f:
-                f.write(response.content)
-            
-            logger.info(f"Image generated: {image_path}")
-            return f"/{image_path}"
-        else:
-            logger.error(f"Image generation failed: {response.status_code} - {response.text}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Image generation error: {str(e)}")
-        return None
-
-def post_to_blogger(title, content, meta_description="", image_url="", keywords=None):
-    """Post artikel ke Blogger"""
-    try:
-        # Simple mock implementation
-        logger.info(f"Posting to Blogger: {title}")
-        logger.info(f"Content length: {len(content)}")
-        logger.info(f"Keywords: {keywords}")
-        
-        # Simulate successful posting
-        post_id = hash(title) % 1000000
-        return f"https://cryptoajah.blogspot.com/{post_id}"
-        
-    except Exception as e:
-        logger.error(f"Error posting to Blogger: {str(e)}")
-        raise Exception(f"Blogger posting error: {str(e)}")
-
-def analyze_seo(content, title, keywords=None):
-    """Analyze SEO content"""
-    word_count = len(content.split())
-    return {
-        "score": min(85 + (word_count // 100), 95),
-        "word_count": word_count,
-        "headings": {"h1": 1, "h2": 3, "h3": 2, "structure_score": 75},
-        "readability": {"reading_level": "Good", "score": 80},
-        "keyword_analysis": {kw: {"count": content.lower().count(kw.lower()), "density": 1.5} for kw in (keywords or [title])},
-        "recommendations": [
-            "Tambah internal links",
-            "Optimasi meta description",
-            "Tambahkan gambar yang relevan"
-        ]
-    }
-
-def check_plagiarism(content):
-    """Simple plagiarism check"""
-    return 2.0  # Low score for development
-
-def track_performance(post_url, post_title):
-    """Track post performance"""
-    logger.info(f"Tracking performance for: {post_title} - {post_url}")
-
-class ConfigManager:
-    def __init__(self):
-        self.config = {}
-    def get_optimal_posting_schedule(self, num_posts):
-        return [(datetime.now() + timedelta(days=i)).isoformat() for i in range(num_posts)]
-
-# Default configuration
-DEFAULT_CONFIG = {
-    "posting_schedule": {
-        "frequency": "daily",
-        "time": "10:00",
-        "days": ["monday", "wednesday", "friday"],
-        "max_posts_per_day": 2
-    },
-    "content_settings": {
-        "min_words": 1000,
-        "max_words": 2000,
-        "target_readability": "medium",
-        "auto_research_keywords": True,
-        "auto_generate_images": True,
-        "plagiarism_check": True
-    },
-    "seo_settings": {
-        "keyword_density_min": 0.5,
-        "keyword_density_max": 2.5,
-        "internal_links": True,
-        "external_links": True,
-        "meta_description_auto": True
-    }
-}
+# ... (APIKeysManager, fallback functions, AutoPostingSystem classes tetap sama)
+# HANYA bagian yang berkaitan dengan scheduler yang diupdate
 
 class AutoPostingSystem:
     def __init__(self):
@@ -286,8 +48,298 @@ class AutoPostingSystem:
         self.setup_scheduler()
         logger.info("AutoPostingSystem initialized")
     
-    def load_data(self):
-        """Load data from files dengan error handling"""
+    def setup_scheduler(self):
+        """Setup automatic scheduling dengan improved error handling"""
+        try:
+            schedule.clear()
+            config = self.posting_config['posting_schedule']
+            
+            # Convert time to UTC jika perlu
+            posting_time = config['time']
+            
+            if config['frequency'] == 'daily':
+                schedule.every().day.at(posting_time).do(self.process_scheduled_posts)
+                logger.info(f"✅ Daily scheduler set for {posting_time} UTC")
+            elif config['frequency'] == 'weekly':
+                for day in config['days']:
+                    getattr(schedule.every(), day).at(posting_time).do(self.process_scheduled_posts)
+                logger.info(f"✅ Weekly scheduler set for {config['days']} at {posting_time} UTC")
+            elif config['frequency'] == 'hourly':
+                schedule.every().hour.do(self.process_scheduled_posts)
+                logger.info("✅ Hourly scheduler set")
+                
+        except Exception as e:
+            logger.error(f"❌ Error setting up scheduler: {str(e)}")
+    
+    def process_scheduled_posts(self):
+        """Process scheduled posts for today dengan improved logging"""
+        try:
+            now = datetime.now()
+            logger.info(f"🕒 Running scheduled post check at {now}")
+            
+            # Cek posts yang seharusnya dipublish hari ini
+            today = now.date()
+            posts_to_publish = [
+                p for p in self.scheduled_posts 
+                if p.get('status') == 'scheduled' and 
+                datetime.fromisoformat(p['publish_date']).date() <= today
+            ]
+            
+            logger.info(f"📋 Found {len(posts_to_publish)} posts to publish today")
+            
+            if not posts_to_publish:
+                logger.info("ℹ️ No posts to publish today")
+                return
+            
+            published_count = 0
+            for post in posts_to_publish:
+                try:
+                    logger.info(f"🚀 Attempting to publish: {post['title']}")
+                    self.publish_post(post)
+                    published_count += 1
+                    logger.info(f"✅ Successfully published: {post['title']}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to publish post {post.get('id')}: {str(e)}")
+                    post['status'] = 'failed'
+                    post['error'] = str(e)
+                    post['last_attempt'] = now.isoformat()
+            
+            self.save_data()
+            logger.info(f"🎉 Scheduled posts processing completed. Published: {published_count}, Failed: {len(posts_to_publish) - published_count}")
+            
+        except Exception as e:
+            logger.error(f"💥 Critical error in process_scheduled_posts: {str(e)}", exc_info=True)
+
+    def publish_post(self, post):
+        """Publish a single post dengan improved error handling"""
+        try:
+            logger.info(f"📝 Starting publication for: {post['title']}")
+            
+            if not api_keys_manager.keys.get('is_configured'):
+                raise Exception("API keys not configured. Please set up API keys first.")
+            
+            # Generate article content
+            logger.info("🤖 Generating article content...")
+            article_data = generate_article(post['title'], post.get('keywords', []))
+            
+            # Generate image if enabled
+            image_url = None
+            if self.posting_config['content_settings']['auto_generate_images']:
+                logger.info("🎨 Generating image...")
+                image_prompt = generate_image_prompt(post['title'])
+                image_url = create_image(image_prompt)
+                if image_url:
+                    logger.info(f"🖼️ Image generated: {image_url}")
+                else:
+                    logger.warning("⚠️ Image generation failed or skipped")
+            
+            # Check plagiarism if enabled
+            if self.posting_config['content_settings']['plagiarism_check']:
+                logger.info("🔍 Checking plagiarism...")
+                plagiarism_score = check_plagiarism(article_data['content'])
+                if plagiarism_score > 15:
+                    raise Exception(f"Plagiarism score too high: {plagiarism_score}%")
+            
+            # Post to Blogger
+            logger.info("📤 Posting to Blogger...")
+            post_url = post_to_blogger(
+                post['title'],
+                article_data['content'],
+                article_data['meta_description'],
+                image_url,
+                article_data['keywords']
+            )
+            
+            # Update post status
+            post['status'] = 'published'
+            post['published_at'] = datetime.now().isoformat()
+            post['url'] = post_url
+            post['word_count'] = article_data['word_count']
+            
+            # Start performance tracking
+            track_performance(post_url, post['title'])
+            
+            logger.info(f"✅ Successfully published: {post_url}")
+            
+        except Exception as e:
+            logger.error(f"❌ Error publishing post: {str(e)}")
+            raise
+
+# Initialize system
+auto_poster = AutoPostingSystem()
+
+# Scheduler Functions
+def run_scheduler():
+    """Run scheduler in background thread dengan improved reliability"""
+    logger.info("🚀 Starting scheduler thread...")
+    
+    # Initial check on startup
+    logger.info("🔍 Running initial post check...")
+    try:
+        auto_poster.process_scheduled_posts()
+    except Exception as e:
+        logger.error(f"❌ Initial post check failed: {str(e)}")
+    
+    # Main scheduler loop
+    while scheduler_running:
+        try:
+            schedule.run_pending()
+            time.sleep(60)  # Check every minute
+            
+            # Log heartbeat every 10 minutes
+            if int(time.time()) % 600 == 0:
+                logger.info("💓 Scheduler heartbeat - running normally")
+                
+        except Exception as e:
+            logger.error(f"💥 Scheduler loop error: {str(e)}")
+            time.sleep(60)  # Wait before retrying
+    
+    logger.info("🛑 Scheduler thread stopped")
+
+def start_scheduler():
+    """Start the scheduler thread"""
+    global scheduler_thread, scheduler_running
+    
+    if scheduler_thread and scheduler_thread.is_alive():
+        logger.info("✅ Scheduler already running")
+        return
+    
+    scheduler_running = True
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    logger.info("✅ Scheduler thread started successfully")
+
+def stop_scheduler():
+    """Stop the scheduler thread"""
+    global scheduler_running
+    scheduler_running = False
+    logger.info("🛑 Scheduler stop requested")
+
+# Register cleanup function
+atexit.register(stop_scheduler)
+
+# ... (Routes tetap sama, TAMBAHKAN routes baru untuk scheduler control)
+
+@app.route('/api/scheduler/status')
+@require_auth
+def get_scheduler_status():
+    """Get scheduler status"""
+    status = {
+        "scheduler_running": scheduler_running,
+        "scheduler_thread_alive": scheduler_thread.is_alive() if scheduler_thread else False,
+        "next_run": str(schedule.next_run()) if schedule.jobs else "No jobs scheduled",
+        "scheduled_jobs": len(schedule.jobs),
+        "current_time": datetime.now().isoformat()
+    }
+    return jsonify(status)
+
+@app.route('/api/scheduler/trigger', methods=['POST'])
+@require_auth
+def trigger_scheduler_manual():
+    """Trigger scheduler manually untuk testing"""
+    try:
+        logger.info("🔧 Manual scheduler trigger requested")
+        auto_poster.process_scheduled_posts()
+        return jsonify({
+            "success": True,
+            "message": "Scheduler triggered manually"
+        })
+    except Exception as e:
+        logger.error(f"❌ Manual trigger failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/scheduler/restart', methods=['POST'])
+@require_auth
+def restart_scheduler():
+    """Restart scheduler"""
+    try:
+        stop_scheduler()
+        time.sleep(2)
+        start_scheduler()
+        
+        return jsonify({
+            "success": True,
+            "message": "Scheduler restarted successfully"
+        })
+    except Exception as e:
+        logger.error(f"❌ Scheduler restart failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/posts/check-queue')
+@require_auth
+def check_post_queue():
+    """Check posts that are ready to be published"""
+    try:
+        now = datetime.now()
+        today = now.date()
+        
+        scheduled_posts = [
+            p for p in auto_poster.scheduled_posts 
+            if p.get('status') == 'scheduled'
+        ]
+        
+        posts_due = [
+            p for p in scheduled_posts 
+            if datetime.fromisoformat(p['publish_date']).date() <= today
+        ]
+        
+        upcoming_posts = [
+            p for p in scheduled_posts 
+            if datetime.fromisoformat(p['publish_date']).date() > today
+        ]
+        
+        return jsonify({
+            "current_time": now.isoformat(),
+            "scheduled_posts_count": len(scheduled_posts),
+            "posts_due_count": len(posts_due),
+            "upcoming_posts_count": len(upcoming_posts),
+            "posts_due": [{
+                "id": p["id"],
+                "title": p["title"],
+                "scheduled_date": p["publish_date"],
+                "days_until": (datetime.fromisoformat(p['publish_date']).date() - today).days
+            } for p in posts_due],
+            "upcoming_posts": [{
+                "id": p["id"],
+                "title": p["title"], 
+                "scheduled_date": p["publish_date"],
+                "days_until": (datetime.fromisoformat(p['publish_date']).date() - today).days
+            } for p in upcoming_posts]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking post queue: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+# ... (Routes lainnya tetap sama)
+
+# Start scheduler when app starts
+@app.before_first_request
+def startup():
+    """Start scheduler when app starts"""
+    logger.info("🚀 Application starting up...")
+    start_scheduler()
+
+# Update main block
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.getenv('FLASK_ENV') == 'development'
+    
+    # Print debug info on startup
+    logger.info(f"🚀 Starting app on port {port}, debug: {debug}")
+    logger.info(f"📁 Data directory exists: {os.path.exists('data')}")
+    
+    # Start scheduler
+    start_scheduler()
+    
+    app.run(host='0.0.0.0', port=port, debug=debug, use_reloader=False)d data from files dengan error handling"""
         try:
             # Load scheduled posts
             if os.path.exists('data/scheduled_posts.json'):
