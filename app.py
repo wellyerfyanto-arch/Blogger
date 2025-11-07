@@ -377,29 +377,176 @@ class AutoPostingSystem:
         logger.info(f"Added {added_count} bulk titles")
         return added_count
     
-    def process_scheduled_posts(self):
-        """Process scheduled posts for today"""
+    def run_scheduler():
+    """Run scheduler in background thread dengan improved reliability"""
+    logger.info("🚀 Starting scheduler thread...")
+    
+    # Initial check on startup
+    logger.info("🔍 Running initial post check...")
+    try:
+        auto_poster.process_scheduled_posts()
+    except Exception as e:
+        logger.error(f"❌ Initial post check failed: {str(e)}")
+    
+    # Main scheduler loop
+    while scheduler_running:
         try:
-            today = datetime.now().date()
-            posts_to_publish = [
-                p for p in self.scheduled_posts 
-                if p.get('status') == 'scheduled' and 
-                datetime.fromisoformat(p['publish_date']).date() == today
-            ]
+            schedule.run_pending()
+            time.sleep(60)  # Check every minute
             
-            logger.info(f"Processing {len(posts_to_publish)} scheduled posts for today")
-            
-            for post in posts_to_publish:
-                try:
-                    self.publish_post(post)
-                except Exception as e:
-                    logger.error(f"Failed to publish post {post.get('id')}: {str(e)}")
-                    post['status'] = 'failed'
-                    post['error'] = str(e)
-            
-            self.save_data()
+            # Log heartbeat every 10 minutes
+            if int(time.time()) % 600 == 0:
+                logger.info("💓 Scheduler heartbeat - running normally")
+                
         except Exception as e:
-            logger.error(f"Error processing scheduled posts: {str(e)}")
+            logger.error(f"💥 Scheduler loop error: {str(e)}")
+            time.sleep(60)  # Wait before retrying
+    
+    logger.info("🛑 Scheduler thread stopped")
+
+def start_scheduler():
+    """Start the scheduler thread"""
+    global scheduler_thread, scheduler_running
+    
+    if scheduler_thread and scheduler_thread.is_alive():
+        logger.info("✅ Scheduler already running")
+        return
+    
+    scheduler_running = True
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    logger.info("✅ Scheduler thread started successfully")
+
+def stop_scheduler():
+    """Stop the scheduler thread"""
+    global scheduler_running
+    scheduler_running = False
+    logger.info("🛑 Scheduler stop requested")
+
+# Register cleanup function
+atexit.register(stop_scheduler)
+
+# ... (Routes tetap sama, TAMBAHKAN routes baru untuk scheduler control)
+
+@app.route('/api/scheduler/status')
+@require_auth
+def get_scheduler_status():
+    """Get scheduler status"""
+    status = {
+        "scheduler_running": scheduler_running,
+        "scheduler_thread_alive": scheduler_thread.is_alive() if scheduler_thread else False,
+        "next_run": str(schedule.next_run()) if schedule.jobs else "No jobs scheduled",
+        "scheduled_jobs": len(schedule.jobs),
+        "current_time": datetime.now().isoformat()
+    }
+    return jsonify(status)
+
+@app.route('/api/scheduler/trigger', methods=['POST'])
+@require_auth
+def trigger_scheduler_manual():
+    """Trigger scheduler manually untuk testing"""
+    try:
+        logger.info("🔧 Manual scheduler trigger requested")
+        auto_poster.process_scheduled_posts()
+        return jsonify({
+            "success": True,
+            "message": "Scheduler triggered manually"
+        })
+    except Exception as e:
+        logger.error(f"❌ Manual trigger failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/scheduler/restart', methods=['POST'])
+@require_auth
+def restart_scheduler():
+    """Restart scheduler"""
+    try:
+        stop_scheduler()
+        time.sleep(2)
+        start_scheduler()
+        
+        return jsonify({
+            "success": True,
+            "message": "Scheduler restarted successfully"
+        })
+    except Exception as e:
+        logger.error(f"❌ Scheduler restart failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/posts/check-queue')
+@require_auth
+def check_post_queue():
+    """Check posts that are ready to be published"""
+    try:
+        now = datetime.now()
+        today = now.date()
+        
+        scheduled_posts = [
+            p for p in auto_poster.scheduled_posts 
+            if p.get('status') == 'scheduled'
+        ]
+        
+        posts_due = [
+            p for p in scheduled_posts 
+            if datetime.fromisoformat(p['publish_date']).date() <= today
+        ]
+        
+        upcoming_posts = [
+            p for p in scheduled_posts 
+            if datetime.fromisoformat(p['publish_date']).date() > today
+        ]
+        
+        return jsonify({
+            "current_time": now.isoformat(),
+            "scheduled_posts_count": len(scheduled_posts),
+            "posts_due_count": len(posts_due),
+            "upcoming_posts_count": len(upcoming_posts),
+            "posts_due": [{
+                "id": p["id"],
+                "title": p["title"],
+                "scheduled_date": p["publish_date"],
+                "days_until": (datetime.fromisoformat(p['publish_date']).date() - today).days
+            } for p in posts_due],
+            "upcoming_posts": [{
+                "id": p["id"],
+                "title": p["title"], 
+                "scheduled_date": p["publish_date"],
+                "days_until": (datetime.fromisoformat(p['publish_date']).date() - today).days
+            } for p in upcoming_posts]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking post queue: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+# ... (Routes lainnya tetap sama)
+
+# Start scheduler when app starts
+@app.before_first_request
+def startup():
+    """Start scheduler when app starts"""
+    logger.info("🚀 Application starting up...")
+    start_scheduler()
+
+# Update main block
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.getenv('FLASK_ENV') == 'development'
+    
+    # Print debug info on startup
+    logger.info(f"🚀 Starting app on port {port}, debug: {debug}")
+    logger.info(f"📁 Data directory exists: {os.path.exists('data')}")
+    
+    # Start scheduler
+    start_scheduler()
+    
+    app.run(host='0.0.0.0', port=port, debug=debug, use_reloader=False)
     
     def publish_post(self, post):
         """Publish a single post"""
