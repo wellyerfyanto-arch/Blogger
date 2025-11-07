@@ -121,19 +121,4 @@ document.getElementById('testSettingsBtn').addEventListener('click', function() 
     });
 });
 </script>
-{% endblock %}               <p><strong>OpenAI:</strong> ${result.keys.openai_api_key}</p>
-                        <p><strong>Hugging Face:</strong> ${result.keys.hf_api_key}</p>
-                        <p><strong>Blogger Blog ID:</strong> ${result.keys.blogger_blog_id}</p>
-                        <p><strong>Google Client ID:</strong> ${result.keys.google_client_id}</p>
-                        <p><strong>Google Client Secret:</strong> ${result.keys.google_client_secret}</p>
-                    `;
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        });
-    </script>
-</body>
-              </html>
+{% endblock %}
