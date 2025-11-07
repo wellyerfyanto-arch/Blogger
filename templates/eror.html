@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Auto Posting Blog{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <h2>❌ System Error</h2>
+        <p>There was an error initializing the system:</p>
+        <div class="error-details">
+            <p><strong>Error:</strong> {{ error }}</p>
+        </div>
+        <div class="error-actions">
+            <a href="{{ url_for('login') }}" class="btn-primary">Try Again</a>
+            <a href="{{ url_for('debug') }}" class="btn-secondary">View Debug Info</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
