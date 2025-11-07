@@ -1,40 +1,182 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Auto Poster - Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .api-alert {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            border-radius: 8px;
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Auto Posting Blog{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Posts</h3>
+            <p class="stat-number">{{ stats.total_posts }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Published</h3>
+            <p class="stat-number">{{ stats.published_posts }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Scheduled</h3>
+            <p class="stat-number">{{ stats.scheduled_posts }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Titles</h3>
+            <p class="stat-number">{{ stats.pending_titles }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Failed</h3>
+            <p class="stat-number">{{ stats.failed_posts }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>API Status</h3>
+            <p class="stat-number {% if stats.api_configured %}status-good{% else %}status-bad{% endif %}">
+                {{ stats.api_configured and '✅' or '❌' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="actions-grid">
+        <div class="action-card">
+            <h3>📤 Upload Bulk Titles</h3>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="fileInput" name="file" accept=".csv,.txt" required>
+                <button type="submit">Upload File</button>
+            </form>
+            <div class="sample-links">
+                <p>Download sample files:</p>
+                <a href="{{ url_for('serve_sample_file', filename='sample_titles.csv') }}">Sample CSV</a>
+                <a href="{{ url_for('serve_sample_file', filename='sample_titles.txt') }}">Sample TXT</a>
+            </div>
+        </div>
+
+        <div class="action-card">
+            <h3>⏰ Schedule Bulk Posts</h3>
+            <p>Schedule all pending titles automatically:</p>
+            <button id="scheduleBulkBtn">Schedule All Pending</button>
+        </div>
+
+        <div class="action-card">
+            <h3>🔧 Scheduler Status</h3>
+            <div id="schedulerStatus">
+                <p>Loading...</p>
+            </div>
+            <button id="triggerSchedulerBtn">Trigger Scheduler Now</button>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <h2>Recent Posts</h2>
+        <div class="posts-list">
+            {% for post in posts %}
+            <div class="post-item {% if post.status == 'published' %}status-published{% elif post.status == 'scheduled' %}status-scheduled{% else %}status-failed{% endif %}">
+                <h4>{{ post.title }}</h4>
+                <p class="post-meta">
+                    Status: <strong>{{ post.status }}</strong> | 
+                    Created: {{ post.created_at[:10] }}
+                    {% if post.published_at %} | Published: {{ post.published_at[:10] }}{% endif %}
+                </p>
+                {% if post.url %}
+                <a href="{{ post.url }}" target="_blank" class="post-link">View Post</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="no-data">No posts yet. Upload some titles to get started!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if bulk_titles %}
+    <div class="content-section">
+        <h2>Recent Bulk Titles</h2>
+        <div class="titles-list">
+            {% for title in bulk_titles %}
+            <div class="title-item {% if title.status == 'scheduled' %}status-scheduled{% else %}status-pending{% endif %}">
+                <p>{{ title.title }}</p>
+                <small>Added: {{ title.added_at[:10] }} | Status: {{ title.status }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// JavaScript untuk handle form submissions dan AJAX requests
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('file', document.getElementById('fileInput').files[0]);
+    
+    fetch('/api/bulk-upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Success: ' + data.message);
+            location.reload();
         }
-        
-        .api-alert a {
-            color: #d97706;
-            font-weight: 600;
-            text-decoration: none;
+    })
+    .catch(error => {
+        alert('Upload failed: ' + error);
+    });
+});
+
+document.getElementById('scheduleBulkBtn').addEventListener('click', function() {
+    fetch('/api/schedule-bulk', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Success: ' + data.message);
+            location.reload();
         }
-        
-        .api-alert a:hover {
-            text-decoration: underline;
+    });
+});
+
+// Load scheduler status
+function loadSchedulerStatus() {
+    fetch('/api/scheduler/status')
+    .then(response => response.json())
+    .then(data => {
+        const statusDiv = document.getElementById('schedulerStatus');
+        if (data.error) {
+            statusDiv.innerHTML = '<p>Error loading status</p>';
+        } else {
+            statusDiv.innerHTML = `
+                <p><strong>Status:</strong> ${data.scheduler_active ? 'Active' : 'Inactive'}</p>
+                <p><strong>Next Run:</strong> ${data.next_run}</p>
+                <p><strong>Scheduled Posts:</strong> ${data.scheduled_posts_count}</p>
+                <p><strong>Pending Titles:</strong> ${data.pending_bulk_titles}</p>
+            `;
         }
-    </style>
-</head>
-<body>
-    <!-- Tambahkan modal untuk upload di templates/index.html -->
-<div id="uploadModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeUploadModal()">&times;</span>
-        <h3>Upload Titles</h3>
-        
-        <div class="upload-section">
-            <h4>Select File Type</h4>
-            <div class="file-type-selector">
+    });
+}
+
+document.getElementById('triggerSchedulerBtn').addEventListener('click', function() {
+    fetch('/api/scheduler/trigger', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Success: ' + data.message);
+            loadSchedulerStatus();
+        }
+    });
+});
+
+// Load initial status
+loadSchedulerStatus();
+setInterval(loadSchedulerStatus, 30000); // Refresh every 30 seconds
+</script>
+{% endblock %}            <div class="file-type-selector">
                 <button type="button" class="file-type-btn active" data-type="csv">CSV File</button>
                 <button type="button" class="file-type-btn" data-type="txt">Text File</button>
             </div>
