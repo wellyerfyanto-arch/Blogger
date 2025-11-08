@@ -827,6 +827,15 @@ def serve_sample_file(filename):
 @app.errorhandler(404)
 def not_found_error(error):
 
+@app.route('/samples/<filename>')
+@require_auth
+def serve_sample_file(filename):
+    """Serve sample files"""
+    try:
+        return send_from_directory('static/samples', filename)
+    except FileNotFoundError:
+        return "File not found", 404    
+
 # Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
